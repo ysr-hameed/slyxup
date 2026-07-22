@@ -38,3 +38,4 @@ export const sessions = sqliteTable(
     userIdIdx: index("idx_sessions_user_id").on(t.userId),
   }),
 );
+
