@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
 export const plans = sqliteTable("plans", {
   id: text("id").primaryKey(),
@@ -9,6 +9,7 @@ export const plans = sqliteTable("plans", {
   currency: text("currency").notNull().default("usd"),
   interval: text("interval", { enum: ["month", "year"] }).notNull(),
   paddlePriceId: text("paddle_price_id"),
+  deletedAt: text("deleted_at"),
   createdAt: text("created_at").notNull().default("datetime('now')"),
 });
 
@@ -26,6 +27,7 @@ export const subscriptions = sqliteTable(
     currentPeriodEnd: text("current_period_end").notNull(),
     paddleSubscriptionId: text("paddle_subscription_id"),
     paddleCustomerId: text("paddle_customer_id"),
+    deletedAt: text("deleted_at"),
     createdAt: text("created_at").notNull().default("datetime('now')"),
     updatedAt: text("updated_at").notNull().default("datetime('now')"),
   },
@@ -47,6 +49,7 @@ export const invoices = sqliteTable(
     currency: text("currency").notNull().default("usd"),
     status: text("status", { enum: ["paid", "unpaid", "past_due"] }).notNull().default("unpaid"),
     paddleInvoiceId: text("paddle_invoice_id"),
+    deletedAt: text("deleted_at"),
     createdAt: text("created_at").notNull().default("datetime('now')"),
   },
   (t) => ({

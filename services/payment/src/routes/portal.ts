@@ -1,14 +1,24 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { PaymentEnv } from "@slyxup/shared-types";
 import { apiResponseSchema, portalSchema } from "@slyxup/shared-utils";
+import { authMiddleware } from "../middleware/auth";
 
-const route = new OpenAPIHono<{ Bindings: PaymentEnv }>();
+interface Variables {
+  userId: string;
+  userEmail: string;
+  platform: string;
+}
+
+const route = new OpenAPIHono<{ Bindings: PaymentEnv; Variables: Variables }>();
+
+route.use("/portal", authMiddleware);
 
 const routeDef = createRoute({
   method: "post",
   path: "/portal",
   summary: "Create a Paddle customer portal session",
   tags: ["Payment"],
+  security: [{ Bearer: [] }],
   request: {
     body: { content: { "application/json": { schema: portalSchema } } },
   },
@@ -22,6 +32,7 @@ const routeDef = createRoute({
       description: "Portal URL created",
     },
     400: { description: "customerId is required" },
+    401: { description: "Unauthorized" },
     502: { description: "Paddle API error" },
   },
 });

@@ -4,11 +4,18 @@ import { verifyToken } from "@slyxup/shared-utils";
 import { createAdminDb, adminSchema } from "@slyxup/shared-db";
 import { eq } from "drizzle-orm";
 
-export async function adminAuthMiddleware(c: Context<{ Bindings: AdminEnv }>, next: Next) {
+export interface AdminVariables {
+  adminId: string;
+  adminEmail: string;
+  adminRole: string;
+}
+
+export async function adminAuthMiddleware(c: Context<{ Bindings: AdminEnv; Variables: AdminVariables }>, next: Next) {
   const auth = c.req.header("authorization");
   if (!auth?.startsWith("Bearer ")) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
   }
+
   const payload = await verifyToken(auth.slice(7), c.env.ADMIN_JWT_SECRET);
   if (!payload) {
     return c.json({ success: false, error: "Invalid or expired admin token" }, 401);
@@ -25,8 +32,8 @@ export async function adminAuthMiddleware(c: Context<{ Bindings: AdminEnv }>, ne
     return c.json({ success: false, error: "Admin not found" }, 401);
   }
 
-  (c as any).set("adminId", admin.id);
-  (c as any).set("adminEmail", admin.email);
-  (c as any).set("adminRole", admin.role);
+  c.set("adminId", admin.id);
+  c.set("adminEmail", admin.email);
+  c.set("adminRole", admin.role);
   await next();
 }

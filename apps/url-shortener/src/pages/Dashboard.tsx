@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { urls } from "../lib/api";
+import { urls, auth } from "../lib/api";
 
 interface Link {
   id: string; code: string; target: string; title: string | null;
@@ -8,11 +8,13 @@ interface Link {
 }
 
 const BASE = import.meta.env.VITE_SHORT_BASE || "http://localhost:8003/r";
+const AUTH_WEB = import.meta.env.VITE_AUTH_WEB_URL || "http://localhost:5173";
+const LOGIN_URL = `${AUTH_WEB}/login?redirect=${encodeURIComponent(window.location.origin + "/callback")}&platform=url-shortener`;
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const jwt = localStorage.getItem("jwt");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const [email, setEmail] = useState("");
   const [links, setLinks] = useState<Link[]>([]);
   const [loading, setLoading] = useState(true);
   const [target, setTarget] = useState("");
@@ -21,7 +23,12 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
 
-  useEffect(() => { if (!jwt) navigate("/login"); }, []);
+  useEffect(() => {
+    if (!jwt) { window.location.href = LOGIN_URL; return; }
+    auth.me(jwt).then((res: any) => {
+      if (res.success) setEmail(res.data.email);
+    });
+  }, []);
 
   const fetchLinks = async () => {
     if (!jwt) return;
@@ -61,7 +68,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-zinc-500 text-sm">Welcome, {user.email}</p>
+        <p className="text-zinc-500 text-sm">Welcome, {email}</p>
       </div>
 
       <form onSubmit={createLink} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">

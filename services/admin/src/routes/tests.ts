@@ -5,9 +5,12 @@ import { createAdminDb, adminSchema, testSchema } from "@slyxup/shared-db";
 import { desc, eq } from "drizzle-orm";
 import { logger } from "@slyxup/shared-logger";
 import { adminAuthMiddleware } from "../middleware/adminAuth";
+import type { AdminVariables } from "../middleware/adminAuth";
 import type { Context, Next } from "hono";
 
-const route = new OpenAPIHono<{ Bindings: AdminEnv }>();
+type AdminBindings = { Bindings: AdminEnv; Variables: AdminVariables };
+
+const route = new OpenAPIHono<AdminBindings>();
 
 route.use("*", adminAuthMiddleware as (c: Context, next: Next) => Promise<Response | void>);
 
@@ -79,17 +82,16 @@ const authTestRoute = createRoute({
 
 route.openapi(authTestRoute, async (c) => {
   const db = createAdminDb(c.env.DB);
-  const adminId = (c as any).get("adminId");
+  const adminId = c.get("adminId");
   const base = c.env.AUTH_URL;
   const testEmail = `test-${Date.now()}@slyxup-test.com`;
   const testPassword = "TestPass123!";
   const results: Array<z.infer<typeof testResultSchema>> = [];
 
-  const testPlatform = "test-platform";
   const tests: z.infer<typeof testCaseSchema>[] = [
-    { name: "register", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 201, expectSuccess: true },
-    { name: "register_duplicate", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 409, expectSuccess: false },
-    { name: "login", endpoint: `${base}/login`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 200, expectSuccess: true },
+    { name: "register", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword }, expectStatus: 201, expectSuccess: true },
+    { name: "register_duplicate", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword }, expectStatus: 409, expectSuccess: false },
+    { name: "login", endpoint: `${base}/login`, method: "POST", body: { email: testEmail, password: testPassword }, expectStatus: 200, expectSuccess: true },
   ];
 
   let jwt = "";
@@ -116,7 +118,6 @@ route.openapi(authTestRoute, async (c) => {
 
   const allPassed = results.every((r) => r.passed);
 
-  const testRunId = generateId();
   for (const r of results) {
     await db.insert(testSchema.testResults).values({
       id: generateId(),
@@ -135,6 +136,10 @@ route.openapi(authTestRoute, async (c) => {
     action: "run_tests",
     resource: "test_auth",
     details: JSON.stringify({ passed: allPassed, total: results.length, passedCount: results.filter((r) => r.passed).length }),
+    ip: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+    userAgent: c.req.header("user-agent"),
+    requestId: crypto.randomUUID(),
+    success: allPassed ? 1 : 0,
   }).run();
 
   logger.info("auth_tests_completed", { adminId, allPassed, total: results.length });
@@ -169,15 +174,14 @@ const paymentTestRoute = createRoute({
 
 route.openapi(paymentTestRoute, async (c) => {
   const db = createAdminDb(c.env.DB);
-  const adminId = (c as any).get("adminId");
+  const adminId = c.get("adminId");
   const base = c.env.PAYMENT_URL;
   const results: Array<z.infer<typeof testResultSchema>> = [];
 
   const tests: z.infer<typeof testCaseSchema>[] = [
-    { name: "checkout_missing_fields", endpoint: `${base}/checkout`, method: "POST", body: {}, expectStatus: 400, expectSuccess: false },
-    { name: "subscription_missing_userId", endpoint: `${base}/subscription`, method: "GET", expectStatus: 400, expectSuccess: false },
-    { name: "subscription_valid", endpoint: `${base}/subscription?userId=nonexistent&platform=test-platform`, method: "GET", expectStatus: 200, expectSuccess: true },
-    { name: "portal_missing_customerId", endpoint: `${base}/portal`, method: "POST", body: {}, expectStatus: 400, expectSuccess: false },
+    { name: "checkout_unauthorized", endpoint: `${base}/checkout`, method: "POST", body: { priceId: "pri_123" }, expectStatus: 401, expectSuccess: false },
+    { name: "subscription_unauthorized", endpoint: `${base}/subscription`, method: "GET", expectStatus: 401, expectSuccess: false },
+    { name: "portal_unauthorized", endpoint: `${base}/portal`, method: "POST", body: { customerId: "cus_123" }, expectStatus: 401, expectSuccess: false },
     { name: "webhook_missing_signature", endpoint: `${base}/webhook`, method: "POST", body: { event_type: "transaction.completed" }, expectStatus: 400, expectSuccess: false },
   ];
 
@@ -206,6 +210,10 @@ route.openapi(paymentTestRoute, async (c) => {
     action: "run_tests",
     resource: "test_payment",
     details: JSON.stringify({ passed: allPassed, total: results.length, passedCount: results.filter((r) => r.passed).length }),
+    ip: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+    userAgent: c.req.header("user-agent"),
+    requestId: crypto.randomUUID(),
+    success: allPassed ? 1 : 0,
   }).run();
 
   logger.info("payment_tests_completed", { adminId, allPassed, total: results.length });

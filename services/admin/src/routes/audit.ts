@@ -4,9 +4,12 @@ import { apiResponseSchema } from "@slyxup/shared-utils";
 import { createAdminDb, adminSchema } from "@slyxup/shared-db";
 import { desc, eq } from "drizzle-orm";
 import { adminAuthMiddleware } from "../middleware/adminAuth";
+import type { AdminVariables } from "../middleware/adminAuth";
 import type { Context, Next } from "hono";
 
-const route = new OpenAPIHono<{ Bindings: AdminEnv }>();
+type AdminBindings = { Bindings: AdminEnv; Variables: AdminVariables };
+
+const route = new OpenAPIHono<AdminBindings>();
 
 route.use("*", adminAuthMiddleware as (c: Context, next: Next) => Promise<Response | void>);
 

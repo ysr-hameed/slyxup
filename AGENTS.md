@@ -7,7 +7,7 @@
 - **API Spec**: OpenAPI 3.0 auto-generated from Zod schemas + Swagger UI
 - **ORM**: Drizzle ORM (d1 adapter, no Prisma!)
 - **DB**: Cloudflare D1 (SQLite)
-- **Auth**: jose JWT (HS256)
+- **Auth**: jose JWT (HS256) — SSO model, email globally unique
 - **Payment**: Paddle Billing v2 (NOT Stripe)
 - **Frontend**: React + Vite + shadcn/ui + Tailwind (SPA, NO SSR)
 - **Hosting**: Cloudflare Pages + Functions
@@ -18,8 +18,9 @@
 ```
 packages/
 ├── shared-types/     → User, Session, Subscription, ApiResponse, Env types
-├── shared-utils/     → jwt.ts, crypto.ts, validation.ts, openapi.ts
-├── shared-db/        → schema/ (auth.ts, payment.ts), migrations/
+├── shared-utils/     → crypto.ts, validation.ts, openapi.ts, jwt.ts
+├── shared-auth/      → Auth middleware factory, platform helpers
+├── shared-db/        → schema/ (auth.ts, payment.ts, admin.ts)
 └── shared-logger/    → Structured logger + Hono error handler
 
 services/
@@ -43,6 +44,22 @@ apps/
 - Each service has its own D1 database
 - Frontend is STATIC React SPA — no SSR (keeps Workers free)
 - Use shadcn/ui for UI components
+- **Tenant/Patform is ALWAYS derived from JWT** — never from request body
+- **user.email is globally unique** (SSO model) — users exist across platforms via `platform_memberships`
+- **Soft delete** on all tables — `deleted_at` column, never hard DELETE
+
+## Auth Model (SSO)
+```
+users (email globally unique)
+  ↓
+platform_memberships (user_id + platform_id)
+  ↓
+platforms (slug, domain, status)
+```
+- Register creates user only (no platform)
+- Login returns JWT with `platform_id` from user's first membership
+- All subsequent requests derive `platform` from JWT, not request body
+- Payment service uses auth middleware with JWT_SECRET to verify tokens
 
 ## Paddle Rules
 - Paddle is MoR — NEVER calculate VAT/tax manually
@@ -75,6 +92,7 @@ pnpm format                # Format code
 ## Package Names
 - `@slyxup/shared-types`
 - `@slyxup/shared-utils`
+- `@slyxup/shared-auth` — auth middleware (`createAuthMiddleware`)
 - `@slyxup/shared-db`
 - `@slyxup/shared-logger`
 - `@slyxup/auth`
@@ -84,9 +102,9 @@ pnpm format                # Format code
 ## Types
 ```
 Bindings for Workers:
-  AuthEnv { DB: D1Database, JWT_SECRET: string }
-  PaymentEnv { DB: D1Database, PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET, PADDLE_ENV }
-  AdminEnv { DB: D1Database, ADMIN_JWT_SECRET, AUTH_URL, PAYMENT_URL }
+  AuthEnv { DB: D1Database, JWT_SECRET: string, ADMIN_API_KEY, ... }
+  PaymentEnv { DB: D1Database, JWT_SECRET: string, PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET, PADDLE_ENV }
+  AdminEnv { DB: D1Database, JWT_SECRET, ADMIN_JWT_SECRET, AUTH_URL, PAYMENT_URL }
 ```
 
 ## Drizzle ORM
@@ -136,3 +154,19 @@ export default route;
 
 **Shared schemas available in `@slyxup/shared-utils`:**
 `registerSchema`, `loginSchema`, `checkoutSchema`, `portalSchema`, `adminRegisterSchema`, `adminLoginSchema`, `apiResponseSchema`, `jwtHeaderSchema`, `subscriptionQuerySchema`
+
+## Shared Auth Middleware
+
+Use `createAuthMiddleware` from `@slyxup/shared-auth`:
+```typescript
+import { createAuthMiddleware } from "@slyxup/shared-auth";
+
+// Pass JWT secret as string or function(c) that returns secret
+const auth = createAuthMiddleware((c) => c.env.JWT_SECRET);
+route.use("/protected", auth);
+```
+
+Context values set by middleware:
+- `c.get("userId")` — user ID from JWT sub
+- `c.get("userEmail")` — email from JWT
+- `c.get("platform")` — platform_id from JWT

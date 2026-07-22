@@ -1,25 +1,24 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import type { AuthEnv } from "@slyxup/shared-types";
-import { hashPassword, generateId, validateEmail, validatePassword, validateName, registerSchema, apiResponseSchema } from "@slyxup/shared-utils";
+import type { AuthEnv, ApiResponse } from "@slyxup/shared-types";
+import { hashPassword, generateId, validateEmail, validatePassword, validateName, registerSchema, apiResponseSchema, signToken } from "@slyxup/shared-utils";
 import { createAuthDb, authSchema } from "@slyxup/shared-db";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/shared-logger";
-import { sendEmail, welcomeEmail } from "@slyxup/shared-email";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 const routeDef = createRoute({
   method: "post",
   path: "/register",
-  summary: "Register a new user",
+  summary: "Register a new user (SSO)",
   tags: ["Auth"],
   request: {
     body: { content: { "application/json": { schema: registerSchema } } },
   },
   responses: {
     201: {
-      content: { "application/json": { schema: apiResponseSchema(z.object({ userId: z.string() })) } },
-      description: "User registered successfully",
+      content: { "application/json": { schema: apiResponseSchema(z.object({ userId: z.string(), jwt: z.string() })) } },
+      description: "User registered",
     },
     400: { description: "Validation error" },
     409: { description: "Email already registered" },
@@ -27,7 +26,7 @@ const routeDef = createRoute({
 });
 
 route.openapi(routeDef, async (c) => {
-  const { email, password, name, platform } = c.req.valid("json");
+  const { email, password, name } = c.req.valid("json");
 
   if (!validateEmail(email))
     return c.json({ success: false, error: "Invalid email" }, 400);
@@ -39,6 +38,7 @@ route.openapi(routeDef, async (c) => {
     return c.json({ success: false, error: validateName(name).error }, 400);
 
   const db = createAuthDb(c.env.DB);
+
   const existing = await db
     .select({ id: authSchema.users.id })
     .from(authSchema.users)
@@ -52,27 +52,17 @@ route.openapi(routeDef, async (c) => {
   const passwordHash = await hashPassword(password);
 
   await db.insert(authSchema.users).values({
-    id, email, name: name ?? null, platform, passwordHash,
+    id, email, name: name ?? null, passwordHash,
   }).run();
 
-  logger.info("user_registered", { userId: id, email, platform });
+  logger.info("user_registered", { userId: id, email });
 
-  if (c.env.BREVO_API_KEY) {
-    c.executionCtx.waitUntil(
-      sendEmail(
-        c.env.BREVO_API_KEY,
-        c.env.EMAIL_FROM,
-        email,
-        "Welcome to Slyxup!",
-        welcomeEmail(name ?? email),
-      ).then((r) => {
-        if (r.success) logger.info("welcome_email_sent", { email, messageId: r.messageId });
-        else logger.error("welcome_email_failed", { email, error: r.error });
-      }),
-    );
-  }
+  const jwt = await signToken(
+    { sub: id, email, platform_id: "default" },
+    c.env.JWT_SECRET, 86400,
+  );
 
-  return c.json({ success: true, data: { userId: id } }, 201);
+  return c.json({ success: true, data: { userId: id, jwt } }, 201);
 });
 
 export default route;

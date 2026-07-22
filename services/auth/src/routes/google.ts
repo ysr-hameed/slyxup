@@ -36,7 +36,6 @@ route.openapi(loginRoute, async (c) => {
     return c.json({ success: false, error: "Google login not configured" }, 500);
   }
 
-  const { platform } = c.req.valid("query");
   const redirectUri = `${new URL(c.req.url).origin}/api/auth/google/callback`;
   const url =
     "https://accounts.google.com/o/oauth2/v2/auth?" +
@@ -46,7 +45,6 @@ route.openapi(loginRoute, async (c) => {
       response_type: "code",
       scope: "openid email profile",
       access_type: "offline",
-      state: JSON.stringify({ platform }),
     });
 
   return c.json({ success: true, data: { url } });
@@ -140,11 +138,10 @@ route.openapi(callbackRoute, async (c) => {
         .run();
     } else {
       const newId = generateId();
-      const platform = new URL(c.req.url).searchParams.get("platform") || "default";
       await db
         .insert(authSchema.users)
         .values({
-          id: newId, email: googleUser.email, name: googleUser.name, platform,
+          id: newId, email: googleUser.email, name: googleUser.name,
           googleId: googleUser.id, avatarUrl: googleUser.picture,
         })
         .run();
@@ -160,6 +157,15 @@ route.openapi(callbackRoute, async (c) => {
       return c.json({ success: false, error: "Failed to create user" }, 500);
     }
 
+    const memberships = await db
+      .select({ id: authSchema.platforms.id })
+      .from(authSchema.platformMemberships)
+      .innerJoin(authSchema.platforms, eq(authSchema.platformMemberships.platformId, authSchema.platforms.id))
+      .where(eq(authSchema.platformMemberships.userId, user.id))
+      .all();
+
+    const platformId = memberships.length > 0 ? memberships[0]!.id : "default";
+
     const sessionId = generateId();
     const sessionToken = generateToken();
     const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
@@ -170,7 +176,7 @@ route.openapi(callbackRoute, async (c) => {
       .run();
 
     const jwt = await signToken(
-      { sub: user.id, email: user.email, platform: user.platform },
+      { sub: user.id, email: user.email, platform_id: platformId },
       c.env.JWT_SECRET, 86400,
     );
 

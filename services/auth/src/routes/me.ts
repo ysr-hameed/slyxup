@@ -24,7 +24,6 @@ const routeDef = createRoute({
             id: z.string(),
             email: z.string(),
             name: z.string().nullable(),
-            platform: z.string(),
           })),
         },
       },
@@ -46,7 +45,7 @@ route.openapi(routeDef, async (c) => {
 
   const db = createAuthDb(c.env.DB);
   const user = await db
-    .select({ id: authSchema.users.id, email: authSchema.users.email, name: authSchema.users.name, platform: authSchema.users.platform })
+    .select({ id: authSchema.users.id, email: authSchema.users.email, name: authSchema.users.name })
     .from(authSchema.users)
     .where(eq(authSchema.users.id, payload.sub))
     .get();

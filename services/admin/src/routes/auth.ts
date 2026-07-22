@@ -46,7 +46,7 @@ route.openapi(loginRoute, async (c) => {
     return c.json({ success: false, error: "Invalid email or password" }, 401);
 
   const jwt = await signToken(
-    { sub: admin.id, email: admin.email },
+    { sub: admin.id, email: admin.email, platform_id: "admin" },
     c.env.ADMIN_JWT_SECRET, 86400,
   );
 

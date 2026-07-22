@@ -29,19 +29,15 @@ export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
   name: z.string().max(100).optional(),
-  platform: z.string().default("default"),
 });
 
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
-  platform: z.string().optional(),
 });
 
 export const checkoutSchema = z.object({
   priceId: z.string(),
-  userId: z.string(),
-  platform: z.string().optional(),
   returnUrl: z.string().optional(),
 });
 
@@ -52,7 +48,6 @@ export const portalSchema = z.object({
 
 export const subscriptionQuerySchema = z.object({
   userId: z.string(),
-  platform: z.string().optional(),
 });
 
 export const adminRegisterSchema = z.object({

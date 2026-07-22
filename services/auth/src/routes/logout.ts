@@ -32,7 +32,10 @@ route.openapi(routeDef, async (c) => {
   const { token } = c.req.valid("json");
   if (token) {
     const db = createAuthDb(c.env.DB);
-    await db.delete(authSchema.sessions).where(eq(authSchema.sessions.token, token)).run();
+    await db.update(authSchema.sessions)
+      .set({ revokedAt: new Date().toISOString() })
+      .where(eq(authSchema.sessions.token, token))
+      .run();
   }
   return c.json({ success: true });
 });

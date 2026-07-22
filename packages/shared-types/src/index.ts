@@ -1,8 +1,16 @@
+export interface Platform {
+  id: string;
+  slug: string;
+  name: string | null;
+  domain: string | null;
+  status: "active" | "inactive";
+  created_at: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string | null;
-  platform: string;
   password_hash: string | null;
   google_id: string | null;
   github_id: string | null;
@@ -13,10 +21,22 @@ export interface User {
   updated_at: string;
 }
 
+export interface PlatformMembership {
+  id: string;
+  user_id: string;
+  platform_id: string;
+  role: "member" | "admin" | "owner";
+  created_at: string;
+}
+
 export interface Session {
   id: string;
   user_id: string;
   token: string;
+  ip: string | null;
+  user_agent: string | null;
+  last_seen: string | null;
+  revoked_at: string | null;
   expires_at: string;
   created_at: string;
 }
@@ -31,6 +51,7 @@ export interface Subscription {
   current_period_end: string;
   paddle_subscription_id: string | null;
   paddle_customer_id: string | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +65,7 @@ export interface Plan {
   currency: string;
   interval: "month" | "year";
   paddle_price_id: string | null;
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -56,6 +78,7 @@ export interface Invoice {
   currency: string;
   status: "paid" | "unpaid" | "past_due";
   paddle_invoice_id: string | null;
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -68,7 +91,7 @@ export interface ApiResponse<T = unknown> {
 export interface JwtPayload {
   sub: string;
   email: string;
-  platform: string;
+  platform_id: string;
   exp: number;
   iat: number;
 }
@@ -89,6 +112,7 @@ export interface PaymentEnv {
   PADDLE_API_KEY: string;
   PADDLE_WEBHOOK_SECRET: string;
   PADDLE_ENVIRONMENT: "sandbox" | "production";
+  JWT_SECRET: string;
   ENVIRONMENT: string;
 }
 
@@ -101,11 +125,14 @@ export interface AdminEnv {
   ENVIRONMENT: string;
 }
 
+export type AdminRole = "superadmin" | "billing_admin" | "support_admin" | "developer" | "readonly";
+
 export interface AdminUser {
   id: string;
   email: string;
   name: string | null;
-  role: "superadmin" | "admin";
+  role: AdminRole;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -117,6 +144,10 @@ export interface AuditLog {
   resource: string;
   resource_id: string | null;
   details: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  request_id: string | null;
+  success: number;
   created_at: string;
 }
 

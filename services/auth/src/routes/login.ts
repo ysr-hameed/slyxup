@@ -10,7 +10,7 @@ const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 const routeDef = createRoute({
   method: "post",
   path: "/login",
-  summary: "Login with email and password",
+  summary: "Login with email and password (SSO)",
   tags: ["Auth"],
   request: {
     body: { content: { "application/json": { schema: loginSchema } } },
@@ -26,8 +26,13 @@ const routeDef = createRoute({
               id: z.string(),
               email: z.string(),
               name: z.string().nullable(),
-              platform: z.string(),
             }),
+            platforms: z.array(z.object({
+              id: z.string(),
+              slug: z.string(),
+              name: z.string().nullable(),
+              role: z.string(),
+            })),
           })),
         },
       },
@@ -39,7 +44,7 @@ const routeDef = createRoute({
 });
 
 route.openapi(routeDef, async (c) => {
-  const { email, password, platform } = c.req.valid("json");
+  const { email, password } = c.req.valid("json");
 
   const db = createAuthDb(c.env.DB);
   const user = await db
@@ -51,13 +56,24 @@ route.openapi(routeDef, async (c) => {
   if (!user || !user.passwordHash || !(await verifyPassword(password, user.passwordHash)))
     return c.json({ success: false, error: "Invalid email or password" }, 401);
 
-  if (platform && user.platform !== platform)
-    return c.json({ success: false, error: "Invalid email or password" }, 401);
-
   if (user.blocked)
     return c.json({ success: false, error: "Account is blocked" }, 403);
   if (user.deletedAt)
     return c.json({ success: false, error: "Account has been deleted" }, 403);
+
+  const memberships = await db
+    .select({
+      id: authSchema.platforms.id,
+      slug: authSchema.platforms.slug,
+      name: authSchema.platforms.name,
+      role: authSchema.platformMemberships.role,
+    })
+    .from(authSchema.platformMemberships)
+    .innerJoin(authSchema.platforms, eq(authSchema.platformMemberships.platformId, authSchema.platforms.id))
+    .where(eq(authSchema.platformMemberships.userId, user.id))
+    .all();
+
+  const platformId = memberships.length > 0 ? memberships[0]!.id : "default";
 
   const sessionId = generateId();
   const token = generateToken();
@@ -68,17 +84,18 @@ route.openapi(routeDef, async (c) => {
   }).run();
 
   const jwt = await signToken(
-    { sub: user.id, email: user.email, platform: user.platform },
+    { sub: user.id, email: user.email, platform_id: platformId },
     c.env.JWT_SECRET, 86400,
   );
 
-  logger.info("user_login", { userId: user.id, email: user.email, platform: user.platform });
+  logger.info("user_login", { userId: user.id, email: user.email, platformId });
 
   return c.json({
     success: true,
     data: {
       token, jwt,
-      user: { id: user.id, email: user.email, name: user.name, platform: user.platform },
+      user: { id: user.id, email: user.email, name: user.name },
+      platforms: memberships.map(m => ({ id: m.id, slug: m.slug, name: m.name, role: m.role })),
     },
   });
 });

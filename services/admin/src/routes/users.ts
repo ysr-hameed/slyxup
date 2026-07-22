@@ -5,9 +5,12 @@ import { createAdminDb, adminSchema } from "@slyxup/shared-db";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/shared-logger";
 import { adminAuthMiddleware } from "../middleware/adminAuth";
+import type { AdminVariables } from "../middleware/adminAuth";
 import type { Context, Next } from "hono";
 
-const route = new OpenAPIHono<{ Bindings: AdminEnv }>();
+type AdminBindings = { Bindings: AdminEnv; Variables: AdminVariables };
+
+const route = new OpenAPIHono<AdminBindings>();
 
 route.use("*", adminAuthMiddleware as (c: Context, next: Next) => Promise<Response | void>);
 
@@ -58,7 +61,7 @@ route.openapi(getRoute, async (c) => {
 const deleteRoute = createRoute({
   method: "delete",
   path: "/{id}",
-  summary: "Delete an admin",
+  summary: "Delete an admin (soft delete)",
   tags: ["Admin"],
   security: [{ Bearer: [] }],
   request: {
@@ -68,26 +71,28 @@ const deleteRoute = createRoute({
     200: { content: { "application/json": { schema: apiResponseSchema() } }, description: "Admin deleted" },
     400: { description: "Cannot delete yourself" },
     401: { description: "Unauthorized" },
-    403: { description: "Only superadmin can delete superadmin" },
+    403: { description: "Insufficient permissions" },
     404: { description: "Admin not found" },
   },
 });
 
 route.openapi(deleteRoute, async (c) => {
   const { id } = c.req.valid("param");
-  const adminId = (c as any).get("adminId");
+  const adminId = c.get("adminId");
+  const adminRole = c.get("adminRole");
 
   if (id === adminId)
     return c.json({ success: false, error: "Cannot delete yourself" }, 400);
+
+  if (adminRole !== "superadmin")
+    return c.json({ success: false, error: "Only superadmin can delete admins" }, 403);
 
   const db = createAdminDb(c.env.DB);
   const admin = await db.select().from(adminSchema.adminUsers).where(eq(adminSchema.adminUsers.id, id)).get();
   if (!admin) return c.json({ success: false, error: "Admin not found" }, 404);
 
-  if (admin.role === "superadmin" && (c as any).get("adminRole") !== "superadmin")
-    return c.json({ success: false, error: "Only superadmin can delete superadmin" }, 403);
-
-  await db.delete(adminSchema.adminUsers).where(eq(adminSchema.adminUsers.id, id)).run();
+  const now = new Date().toISOString();
+  await db.update(adminSchema.adminUsers).set({ deletedAt: now, updatedAt: now }).where(eq(adminSchema.adminUsers.id, id)).run();
 
   await db.insert(adminSchema.auditLogs).values({
     id: generateId(),
@@ -96,6 +101,10 @@ route.openapi(deleteRoute, async (c) => {
     resource: "admin_user",
     resourceId: id,
     details: JSON.stringify({ email: admin.email }),
+    ip: c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+    userAgent: c.req.header("user-agent"),
+    requestId: crypto.randomUUID(),
+    success: 1,
   }).run();
 
   logger.info("admin_deleted", { deletedBy: adminId, deletedId: id, email: admin.email });

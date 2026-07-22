@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { api } from "./api";
 
 interface User {
-  id: string; email: string; name: string | null; platform: string;
+  id: string; email: string; name: string | null;
 }
 
 interface AuthState {
@@ -44,7 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string, name?: string) => {
     const res: any = await api.auth.register({ email, password, name });
-    if (res.success) return { success: true };
+    if (res.success) {
+      localStorage.setItem("jwt", res.data.jwt);
+      setJwt(res.data.jwt);
+      if (res.data.user) setUser(res.data.user);
+      return { success: true };
+    }
     return { success: false, error: res.error };
   };
 

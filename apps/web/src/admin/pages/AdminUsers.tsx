@@ -2,14 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { api } from "../../core/lib/api";
 
 interface PlatformUser {
-  id: string; email: string; name: string | null; platform: string;
+  id: string; email: string; name: string | null;
   blocked: number; deleted_at: string | null; created_at: string;
 }
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<PlatformUser[]>([]);
-  const [platforms, setPlatforms] = useState<string[]>([]);
-  const [selected, setSelected] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
@@ -17,11 +15,9 @@ export default function AdminUsers() {
   const fetch = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const res: any = await api.users.list(showDeleted ? undefined : undefined);
+      const res: any = await api.users.list();
       if (res.success) {
-        const all: PlatformUser[] = res.data;
-        setUsers(all);
-        setPlatforms([...new Set(all.map(u => u.platform))].sort());
+        setUsers(res.data);
       } else setError(res.error || "Failed");
     } catch { setError("Network error"); }
     setLoading(false);
@@ -29,12 +25,9 @@ export default function AdminUsers() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const visible = selected === "all"
-    ? users.filter(u => showDeleted || !u.deleted_at)
-    : users.filter(u => u.platform === selected && (showDeleted || !u.deleted_at));
+  const visible = users.filter(u => showDeleted || !u.deleted_at);
 
   const handleBlock = async (id: string) => {
-    // optimistic update
     setUsers(prev => prev.map(u => u.id === id ? { ...u, blocked: u.blocked ? 0 : 1 } : u));
     await api.users.toggleBlock(id);
   };
@@ -59,11 +52,6 @@ export default function AdminUsers() {
             <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} />
             Show deleted
           </label>
-          <select value={selected} onChange={e => setSelected(e.target.value)}
-            className="text-xs bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-zinc-200">
-            <option value="all">All</option>
-            {platforms.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
           <button onClick={fetch} disabled={loading}
             className="px-3 py-1 bg-zinc-700 rounded text-xs hover:bg-zinc-600 disabled:opacity-50">
             {loading ? "..." : "Refresh"}
@@ -89,10 +77,9 @@ export default function AdminUsers() {
                 {!!u.blocked && <span className="px-1 py-0.5 bg-red-900/50 text-red-300 rounded text-[10px]">Blocked</span>}
                 {u.deleted_at && <span className="px-1 py-0.5 bg-zinc-700 text-zinc-400 rounded text-[10px]">Deleted</span>}
               </div>
-              <div className="text-zinc-500 mt-0.5">{u.name || "—"} · {u.platform}</div>
+              <div className="text-zinc-500 mt-0.5">{u.name || "—"}</div>
             </div>
             <div className="flex items-center gap-1 ml-2 shrink-0">
-              <span className="px-1.5 py-0.5 bg-blue-900/30 text-blue-300 rounded text-[10px]">{u.platform}</span>
               {u.deleted_at ? (
                 <button onClick={() => handleRestore(u.id)}
                   className="px-2 py-1 bg-green-800/50 text-green-300 rounded hover:bg-green-700/50 text-[11px]">

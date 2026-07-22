@@ -1,11 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
-function Badge2({ variant, children }: any) {
-  const v: any = { default: "bg-zinc-700 text-zinc-300", info: "bg-blue-900/40 text-blue-300" };
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${v[variant] || v.default}`}>{children}</span>;
-}
-
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const platform = import.meta.env.VITE_PLATFORM || "web";
@@ -48,7 +43,7 @@ export default function Dashboard() {
           </div>
           <div>
             <span className="text-zinc-500 block">Platform</span>
-            <Badge2 variant="info">{user.platform}</Badge2>
+            <span className="text-zinc-200">{platform}</span>
           </div>
           <div>
             <span className="text-zinc-500 block">User ID</span>

@@ -1,25 +1,20 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useSearchParams } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import { auth } from "./lib/api";
+
+const AUTH_WEB = import.meta.env.VITE_AUTH_WEB_URL || "http://localhost:5173";
 
 function AppInner() {
   const navigate = useNavigate();
   const [jwt, setJwt] = useState<string | null>(() => localStorage.getItem("jwt"));
-  const [user, setUser] = useState<any>(() => {
-    try { return JSON.parse(localStorage.getItem("user") || "null"); } catch { return null; }
-  });
 
   useEffect(() => {
     if (jwt) {
       auth.me(jwt).then((res: any) => {
         if (!res.success) {
           localStorage.removeItem("jwt");
-          localStorage.removeItem("user");
           setJwt(null);
-          setUser(null);
         }
       });
     }
@@ -27,11 +22,12 @@ function AppInner() {
 
   const logout = () => {
     localStorage.removeItem("jwt");
-    localStorage.removeItem("user");
     setJwt(null);
-    setUser(null);
     navigate("/");
   };
+
+  const loginUrl = `${AUTH_WEB}/login?redirect=${encodeURIComponent(window.location.origin + "/callback")}&platform=url-shortener`;
+  const registerUrl = `${AUTH_WEB}/register?redirect=${encodeURIComponent(window.location.origin + "/callback")}&platform=url-shortener`;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -42,13 +38,12 @@ function AppInner() {
             {jwt ? (
               <>
                 <Link to="/dashboard" className="text-sm text-zinc-400 hover:text-zinc-100">Dashboard</Link>
-                <span className="text-xs text-zinc-600">{user?.email}</span>
                 <button onClick={logout} className="text-sm text-zinc-500 hover:text-zinc-300">Logout</button>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-sm text-zinc-400 hover:text-zinc-100">Login</Link>
-                <Link to="/register" className="px-3 py-1.5 bg-zinc-100 text-zinc-900 rounded text-sm font-medium hover:bg-zinc-300">Register</Link>
+                <a href={loginUrl} className="text-sm text-zinc-400 hover:text-zinc-100">Login</a>
+                <a href={registerUrl} className="px-3 py-1.5 bg-zinc-100 text-zinc-900 rounded text-sm font-medium hover:bg-zinc-300">Register</a>
               </>
             )}
           </div>
@@ -58,11 +53,27 @@ function AppInner() {
       <main className="max-w-4xl mx-auto p-6">
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login onLogin={(j, u) => { localStorage.setItem("jwt", j); localStorage.setItem("user", JSON.stringify(u)); setJwt(j); setUser(u); navigate("/dashboard"); }} />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/callback" element={<Callback onAuth={(j) => { localStorage.setItem("jwt", j); setJwt(j); navigate("/dashboard"); }} />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </main>
+    </div>
+  );
+}
+
+function Callback({ onAuth }: { onAuth: (jwt: string) => void }) {
+  const [params] = useSearchParams();
+  const jwtParam = params.get("jwt");
+
+  useEffect(() => {
+    if (jwtParam) {
+      onAuth(jwtParam);
+    }
+  }, [jwtParam]);
+
+  return (
+    <div className="text-center py-20">
+      <p className="text-zinc-400">{jwtParam ? "Authenticating..." : "No token received."}</p>
     </div>
   );
 }
@@ -76,11 +87,15 @@ export default function App() {
 }
 
 function Landing() {
+  const AUTH_WEB = import.meta.env.VITE_AUTH_WEB_URL || "http://localhost:5173";
+  const loginUrl = `${AUTH_WEB}/login?redirect=${encodeURIComponent(window.location.origin + "/callback")}&platform=url-shortener`;
+  const registerUrl = `${AUTH_WEB}/register?redirect=${encodeURIComponent(window.location.origin + "/callback")}&platform=url-shortener`;
+
   return (
     <div className="text-center py-20">
       <h1 className="text-4xl font-bold mb-4">Shorten URLs. Simplify Sharing.</h1>
-      <p className="text-zinc-400 mb-8 max-w-md mx-auto">Create short, memorable links that redirect to your long URLs. Track clicks and manage all your links in one place.</p>
-      <Link to="/register" className="inline-flex px-6 py-3 bg-zinc-100 text-zinc-900 rounded-lg font-medium hover:bg-zinc-300">Get Started</Link>
+      <p className="text-zinc-400 mb-8 max-w-md mx-auto">Create short, memorable links that redirect to your long URLs. Track clicks and manage all links in one place.</p>
+      <a href={registerUrl} className="inline-flex px-6 py-3 bg-zinc-100 text-zinc-900 rounded-lg font-medium hover:bg-zinc-300">Get Started</a>
     </div>
   );
 }

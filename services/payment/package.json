@@ -11,6 +11,7 @@
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-openapi": "^1.5.1",
     "@paddle/paddle-node-sdk": "^1.0.0",
+    "@slyxup/shared-auth": "workspace:*",
     "@slyxup/shared-db": "workspace:*",
     "@slyxup/shared-logger": "workspace:*",
     "@slyxup/shared-types": "workspace:*",

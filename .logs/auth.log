@@ -1,0 +1,561 @@
+
+ ⛅️ wrangler 4.112.0
+────────────────────
+Using secrets defined in .dev.vars
+Your Worker has access to the following bindings:
+Binding                                     Resource                  Mode
+env.DB (slyxup-auth)                        D1 Database               local
+env.ENVIRONMENT ("(hidden)")                Environment Variable      local
+env.JWT_SECRET ("(hidden)")                 Environment Variable      local
+env.ADMIN_API_KEY ("(hidden)")              Environment Variable      local
+env.GOOGLE_CLIENT_ID ("(hidden)")           Environment Variable      local
+env.GOOGLE_CLIENT_SECRET ("(hidden)")       Environment Variable      local
+env.BREVO_API_KEY ("(hidden)")              Environment Variable      local
+env.EMAIL_FROM ("(hidden)")                 Environment Variable      local
+
+⎔ Starting local server...
+[wrangler:info] Ready on http://localhost:8000
+<-- GET /api/auth/me
+{"ts":"2026-07-22T11:41:20.949Z","level":"DEBUG","msg":"request","method":"GET","path":"/api/auth/me","status":401,"ms":3}
+--> GET /api/auth/me [33m401[0m 5ms
+[wrangler:info] GET /api/auth/me 401 Unauthorized (32ms)
+<-- GET /api/auth/me
+{"ts":"2026-07-22T11:41:53.466Z","level":"DEBUG","msg":"request","method":"GET","path":"/api/auth/me","status":401,"ms":0}
+--> GET /api/auth/me [33m401[0m 1ms
+[wrangler:info] GET /api/auth/me 401 Unauthorized (6ms)
+<-- GET /api/auth/me
+{"ts":"2026-07-22T11:42:16.084Z","level":"DEBUG","msg":"request","method":"GET","path":"/api/auth/me","status":401,"ms":0}
+--> GET /api/auth/me [33m401[0m 0ms
+[wrangler:info] GET /api/auth/me 401 Unauthorized (9ms)
+<-- OPTIONS /api/auth/login
+--> OPTIONS /api/auth/login [32m204[0m 1ms
+[wrangler:info] OPTIONS /api/auth/login 204 No Content (16ms)
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:43:26.080Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":401,"ms":52}
+--> POST /api/auth/login [33m401[0m 53ms
+[wrangler:info] POST /api/auth/login 401 Unauthorized (68ms)
+<-- OPTIONS /api/auth/register
+--> OPTIONS /api/auth/register [32m204[0m 1ms
+[wrangler:info] OPTIONS /api/auth/register 204 No Content (12ms)
+<-- POST /api/auth/register
+{"ts":"2026-07-22T11:43:31.762Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/register","status":409,"ms":14}
+--> POST /api/auth/register [33m409[0m 16ms
+[wrangler:info] POST /api/auth/register 409 Conflict (28ms)
+<-- OPTIONS /api/auth/login
+--> OPTIONS /api/auth/login [32m204[0m 1ms
+[wrangler:info] OPTIONS /api/auth/login 204 No Content (11ms)
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:43:59.820Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":401,"ms":18}
+--> POST /api/auth/login [33m401[0m 18ms
+[wrangler:info] POST /api/auth/login 401 Unauthorized (31ms)
+<-- OPTIONS /api/auth/register
+--> OPTIONS /api/auth/register [32m204[0m 0ms
+[wrangler:info] OPTIONS /api/auth/register 204 No Content (5ms)
+<-- POST /api/auth/register
+{"ts":"2026-07-22T11:44:30.085Z","level":"INFO","msg":"user_registered","userId":"44d387f8-4b47-4e22-a092-99c4da7dd1ca","email":"y@gmail.com","platform":"web"}
+{"ts":"2026-07-22T11:44:30.088Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/register","status":201,"ms":88}
+--> POST /api/auth/register [32m201[0m 88ms
+[wrangler:info] POST /api/auth/register 201 Created (286ms)
+{"ts":"2026-07-22T11:44:31.292Z","level":"INFO","msg":"welcome_email_sent","email":"y@gmail.com","messageId":"<202607221144.83875469467@smtp-relay.mailin.fr>"}
+<-- OPTIONS /api/auth/login
+--> OPTIONS /api/auth/login [32m204[0m 0ms
+[wrangler:info] OPTIONS /api/auth/login 204 No Content (12ms)
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:44:47.722Z","level":"INFO","msg":"user_login","userId":"44d387f8-4b47-4e22-a092-99c4da7dd1ca","email":"y@gmail.com","platform":"web"}
+{"ts":"2026-07-22T11:44:47.723Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":200,"ms":36}
+--> POST /api/auth/login [32m200[0m 36ms
+[wrangler:info] POST /api/auth/login 200 OK (49ms)
+<-- OPTIONS /api/auth/me
+--> OPTIONS /api/auth/me [32m204[0m 0ms
+[wrangler:info] OPTIONS /api/auth/me 204 No Content (15ms)
+<-- GET /api/auth/me
+{"ts":"2026-07-22T11:44:47.946Z","level":"DEBUG","msg":"request","method":"GET","path":"/api/auth/me","status":200,"ms":15}
+--> GET /api/auth/me [32m200[0m 16ms
+[wrangler:info] GET /api/auth/me 200 OK (24ms)
+<-- OPTIONS /api/auth/me
+--> OPTIONS /api/auth/me [32m204[0m 0ms
+[wrangler:info] OPTIONS /api/auth/me 204 No Content (12ms)
+<-- GET /api/auth/me
+{"ts":"2026-07-22T11:44:55.913Z","level":"DEBUG","msg":"request","method":"GET","path":"/api/auth/me","status":200,"ms":11}
+--> GET /api/auth/me [32m200[0m 11ms
+[wrangler:info] GET /api/auth/me 200 OK (21ms)
+<-- OPTIONS /api/auth/login
+--> OPTIONS /api/auth/login [32m204[0m 0ms
+[wrangler:info] OPTIONS /api/auth/login 204 No Content (6ms)
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:45:18.580Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":401,"ms":13}
+--> POST /api/auth/login [33m401[0m 13ms
+[wrangler:info] POST /api/auth/login 401 Unauthorized (19ms)
+<-- OPTIONS /api/auth/register
+--> OPTIONS /api/auth/register [32m204[0m 1ms
+[wrangler:info] OPTIONS /api/auth/register 204 No Content (11ms)
+<-- POST /api/auth/register
+{"ts":"2026-07-22T11:45:31.521Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/register","status":409,"ms":14}
+--> POST /api/auth/register [33m409[0m 15ms
+[wrangler:info] POST /api/auth/register 409 Conflict (30ms)
+<-- OPTIONS /api/auth/login
+--> OPTIONS /api/auth/login [32m204[0m 1ms
+[wrangler:info] OPTIONS /api/auth/login 204 No Content (12ms)
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:45:38.182Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":401,"ms":9}
+--> POST /api/auth/login [33m401[0m 9ms
+[wrangler:info] POST /api/auth/login 401 Unauthorized (22ms)
+<-- OPTIONS /api/auth/register
+--> OPTIONS /api/auth/register [32m204[0m 0ms
+[wrangler:info] OPTIONS /api/auth/register 204 No Content (4ms)
+<-- POST /api/auth/register
+{"ts":"2026-07-22T11:45:57.352Z","level":"INFO","msg":"user_registered","userId":"c684e16f-fb3d-409b-852f-94770dc37471","email":"h@gmail.com","platform":"default"}
+{"ts":"2026-07-22T11:45:57.353Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/register","status":201,"ms":19}
+--> POST /api/auth/register [32m201[0m 19ms
+[wrangler:info] POST /api/auth/register 201 Created (27ms)
+{"ts":"2026-07-22T11:45:58.307Z","level":"INFO","msg":"welcome_email_sent","email":"h@gmail.com","messageId":"<202607221145.19316065808@smtp-relay.mailin.fr>"}
+<-- OPTIONS /api/auth/login
+--> OPTIONS /api/auth/login [32m204[0m 0ms
+[wrangler:info] OPTIONS /api/auth/login 204 No Content (10ms)
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:46:03.241Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":401,"ms":11}
+--> POST /api/auth/login [33m401[0m 12ms
+[wrangler:info] POST /api/auth/login 401 Unauthorized (23ms)
+⎔ Reloading local server...
+<-- GET /api/auth/me
+{"ts":"2026-07-22T11:52:27.471Z","level":"DEBUG","msg":"request","method":"GET","path":"/api/auth/me","status":401,"ms":7}
+--> GET /api/auth/me [33m401[0m 13ms
+<-- POST /api/auth/register
+{"ts":"2026-07-22T11:52:46.588Z","level":"INFO","msg":"user_registered","userId":"86953bce-3c65-4dcb-9dfb-0f8091a02567","email":"h-test-1784721166@gmail.com","platform":"url-shortener"}
+{"ts":"2026-07-22T11:52:46.590Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/register","status":201,"ms":62}
+--> POST /api/auth/register [32m201[0m 62ms
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:52:46.748Z","level":"INFO","msg":"user_login","userId":"86953bce-3c65-4dcb-9dfb-0f8091a02567","email":"h-test-1784721166@gmail.com","platform":"url-shortener"}
+{"ts":"2026-07-22T11:52:46.749Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":200,"ms":31}
+--> POST /api/auth/login [32m200[0m 31ms
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:52:47.247Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":401,"ms":14}
+--> POST /api/auth/login [33m401[0m 15ms
+{"ts":"2026-07-22T11:52:47.679Z","level":"INFO","msg":"welcome_email_sent","email":"h-test-1784721166@gmail.com","messageId":"<202607221152.18027763824@smtp-relay.mailin.fr>"}
+<-- POST /api/auth/register
+{"ts":"2026-07-22T11:53:12.068Z","level":"INFO","msg":"user_registered","userId":"8022c72d-9654-4f6a-bdcb-5b5649e9882d","email":"final-1784721191@test.com","platform":"url-shortener"}
+{"ts":"2026-07-22T11:53:12.069Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/register","status":201,"ms":36}
+--> POST /api/auth/register [32m201[0m 37ms
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:53:12.288Z","level":"INFO","msg":"user_login","userId":"8022c72d-9654-4f6a-bdcb-5b5649e9882d","email":"final-1784721191@test.com","platform":"url-shortener"}
+{"ts":"2026-07-22T11:53:12.289Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":200,"ms":23}
+--> POST /api/auth/login [32m200[0m 23ms
+<-- POST /api/auth/login
+{"ts":"2026-07-22T11:53:12.675Z","level":"DEBUG","msg":"request","method":"POST","path":"/api/auth/login","status":401,"ms":9}
+--> POST /api/auth/login [33m401[0m 9ms
+{"ts":"2026-07-22T11:53:12.709Z","level":"INFO","msg":"welcome_email_sent","email":"final-1784721191@test.com","messageId":"<202607221153.88432565312@smtp-relay.mailin.fr>"}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:08.912Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:08.914Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":2}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 3ms
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:10.772Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:10.783Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":11}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:10.790Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:10.790Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 12ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:10.829Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:10.829Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:10.856Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:10.858Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 2ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:11.542Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:11.546Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":4}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 4ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:17.231Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:17.239Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":7}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:17.245Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:17.245Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 10ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:17.278Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:17.279Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:17.309Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:17.310Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:17.517Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:17.517Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:18.184Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:18.185Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 3ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:28.207Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:28.209Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":2}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:28.218Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:28.219Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 4ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:28.249Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:28.250Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:28.255Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:28.256Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:28.290Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:28.290Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:28.297Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:28.298Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:33.091Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:33.092Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 4ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:34.480Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:34.485Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":5}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:34.488Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:34.488Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 7ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:34.517Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:34.517Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:34.526Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:34.527Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:34.841Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:34.841Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:46.505Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:46.505Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:48.169Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:48.170Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:48.176Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:48.176Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 3ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:48.202Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:48.202Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:48.205Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:48.205Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:48.224Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:48.225Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:52.998Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:52.998Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:54.299Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:54.301Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":2}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:54.309Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:54.310Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 3ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:54.355Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:54.355Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:54.361Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:54.362Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:54.385Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:54.386Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 2ms
+⎔ Reloading local server...
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:59.090Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:59.092Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":2}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:59.099Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:59.099Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 3ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:59.126Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:59.126Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:54:59.154Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:54:59.155Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+⎔ Local server updated and ready
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:59.179Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:59.179Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:54:59.407Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:54:59.408Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 3ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:55:51.970Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:55:51.971Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:55:52.007Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:55:52.008Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:55:52.147Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:55:52.147Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+⎔ Reloading local server...
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:55:52.167Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:55:52.167Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:55:52.387Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:55:52.387Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:55:52.393Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:55:52.393Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:04.346Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:04.347Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:04.362Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:04.362Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:05.007Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:05.008Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:05.010Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:05.010Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:05.023Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:05.023Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:05.037Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:05.038Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:13.315Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:13.316Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:13.844Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:13.847Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":3}
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:13.848Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:13.848Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 4ms
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:13.860Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:13.860Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:13.862Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:13.862Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:14.010Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:14.010Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:18.919Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:18.922Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":4}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 6ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:19.019Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:19.019Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+⎔ Reloading local server...
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:19.151Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:19.151Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:19.166Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:19.166Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:19.381Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:19.382Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:19.387Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:19.387Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+⎔ Reloading local server...
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:48.438Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:48.439Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:48.453Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:48.453Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:48.599Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:48.599Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:48.612Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:48.612Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:48.717Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:48.717Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:48.906Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:48.907Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:58.374Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:58.374Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:58.517Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:58.518Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:58.731Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:58.731Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:59.234Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:59.235Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+⎔ Reloading local server...
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:56:59.337Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:56:59.337Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:56:59.524Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:56:59.525Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:57:06.263Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:57:06.264Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:57:06.403Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:57:06.403Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:57:06.646Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:57:06.646Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+⎔ Reloading local server...
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:57:07.220Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:57:07.221Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:57:07.232Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:57:07.232Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:57:07.299Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:57:07.299Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:01.938Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:01.938Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:02.100Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:02.100Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:58:02.324Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:58:02.325Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 1ms
+⎔ Reloading local server...
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:03.056Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:03.057Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:03.067Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:03.068Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:58:03.075Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:58:03.075Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:30.126Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:30.127Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 2ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:30.146Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:30.146Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 0ms
+⎔ Reloading local server...
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:30.302Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:30.303Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/pause
+{"ts":"2026-07-22T11:58:30.315Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/pause","method":"GET"}
+{"ts":"2026-07-22T11:58:30.316Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/pause","status":404,"ms":1}
+--> GET /cdn-cgi/ProxyWorker/pause [33m404[0m 1ms
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:58:30.534Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:58:30.534Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms
+⎔ Local server updated and ready
+<-- GET /cdn-cgi/ProxyWorker/play
+{"ts":"2026-07-22T11:58:30.545Z","level":"WARN","msg":"not_found","path":"/cdn-cgi/ProxyWorker/play","method":"GET"}
+{"ts":"2026-07-22T11:58:30.545Z","level":"DEBUG","msg":"request","method":"GET","path":"/cdn-cgi/ProxyWorker/play","status":404,"ms":0}
+--> GET /cdn-cgi/ProxyWorker/play [33m404[0m 0ms

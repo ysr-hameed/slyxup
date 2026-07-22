@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { Button } from "../../components/ui/Button";
 
@@ -9,12 +9,15 @@ function Input2(props: any) {
 
 export default function Register() {
   const { register } = useAuth();
+  const [params] = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const redirect = params.get("redirect") || "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +34,7 @@ export default function Register() {
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold text-zinc-100">Registered!</h1>
           <p className="text-zinc-400">You can now sign in.</p>
-          <Link to="/login">
+          <Link to={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : "/login"}>
             <Button>Go to Login</Button>
           </Link>
         </div>
@@ -42,10 +45,7 @@ export default function Register() {
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
       <div className="w-full max-w-sm p-6">
-        <h1 className="text-2xl font-bold text-zinc-100 text-center mb-1">Create Account</h1>
-        <p className="text-zinc-500 text-sm text-center mb-6">
-          Platform: <span className="text-blue-400 font-mono">{import.meta.env.VITE_PLATFORM || "web"}</span>
-        </p>
+        <h1 className="text-2xl font-bold text-zinc-100 text-center mb-6">Create Account</h1>
 
         {error && <p className="text-red-400 text-sm bg-red-900/20 p-2 rounded mb-4">{error}</p>}
 
@@ -62,7 +62,9 @@ export default function Register() {
         </form>
 
         <p className="text-zinc-500 text-sm text-center mt-4">
-          Already have an account? <Link to="/login" className="text-blue-400 hover:underline">Sign In</Link>
+          Already have an account?{" "}
+          <Link to={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : "/login"}
+            className="text-blue-400 hover:underline">Sign In</Link>
         </p>
       </div>
     </div>

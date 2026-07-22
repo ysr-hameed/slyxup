@@ -3,31 +3,37 @@ import type { PaymentEnv } from "@slyxup/shared-types";
 import { apiResponseSchema } from "@slyxup/shared-utils";
 import { createPaymentDb, paymentSchema } from "@slyxup/shared-db";
 import { eq, and } from "drizzle-orm";
+import { authMiddleware } from "../middleware/auth";
 
-const route = new OpenAPIHono<{ Bindings: PaymentEnv }>();
+interface Variables {
+  userId: string;
+  userEmail: string;
+  platform: string;
+}
+
+const route = new OpenAPIHono<{ Bindings: PaymentEnv; Variables: Variables }>();
+
+route.use("/subscription", authMiddleware);
 
 const routeDef = createRoute({
   method: "get",
   path: "/subscription",
-  summary: "Get subscriptions by userId and platform",
+  summary: "Get subscriptions for the authenticated user",
   tags: ["Payment"],
-  request: {
-    query: z.object({
-      userId: z.string(),
-      platform: z.string().optional(),
-    }),
-  },
+  security: [{ Bearer: [] }],
+  request: {},
   responses: {
     200: {
       content: { "application/json": { schema: apiResponseSchema(z.any()) } },
       description: "List of subscriptions",
     },
-    400: { description: "userId is required" },
+    401: { description: "Unauthorized" },
   },
 });
 
 route.openapi(routeDef, async (c) => {
-  const { userId, platform } = c.req.valid("query");
+  const userId = c.get("userId");
+  const platform = c.get("platform");
 
   const db = createPaymentDb(c.env.DB);
   const subs = await db
@@ -35,7 +41,7 @@ route.openapi(routeDef, async (c) => {
     .from(paymentSchema.subscriptions)
     .where(and(
       eq(paymentSchema.subscriptions.userId, userId),
-      eq(paymentSchema.subscriptions.platform, platform || "default"),
+      eq(paymentSchema.subscriptions.platform, platform),
     ))
     .all();
 

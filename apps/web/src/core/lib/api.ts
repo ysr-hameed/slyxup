@@ -1,4 +1,3 @@
-const platform = () => import.meta.env.VITE_PLATFORM || "web";
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "/api/auth";
 const PAYMENT_URL = import.meta.env.VITE_PAYMENT_URL || "/api/payment";
 const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "/api/admin";
@@ -15,12 +14,12 @@ export const api = {
     register: (body: { email: string; password: string; name?: string }) =>
       r(`${AUTH_URL}/register`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, platform: platform() }),
+        body: JSON.stringify(body),
       }),
     login: (body: { email: string; password: string }) =>
       r(`${AUTH_URL}/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, platform: platform() }),
+        body: JSON.stringify(body),
       }),
     verify: (jwt: string) => r(`${AUTH_URL}/verify`, { headers: { Authorization: `Bearer ${jwt}` } }),
     me: (jwt: string) => r(`${AUTH_URL}/me`, { headers: { Authorization: `Bearer ${jwt}` } }),
@@ -31,17 +30,17 @@ export const api = {
       }),
   },
   payment: {
-    subscription: (userId: string) =>
-      r(`${PAYMENT_URL}/subscription?userId=${userId}&platform=${platform()}`),
-    checkout: (body: { priceId: string; userId: string }) =>
+    subscription: (jwt: string) =>
+      r(`${PAYMENT_URL}/subscription`, { headers: { Authorization: `Bearer ${jwt}` } }),
+    checkout: (jwt: string, body: { priceId: string }) =>
       r(`${PAYMENT_URL}/checkout`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, platform: platform() }),
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+        body: JSON.stringify(body),
       }),
-    portal: (body: { customerId: string }) =>
+    portal: (jwt: string, body: { customerId: string }) =>
       r(`${PAYMENT_URL}/portal`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, platform: platform() }),
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+        body: JSON.stringify(body),
       }),
   },
   admin: {
@@ -67,8 +66,8 @@ export const api = {
         { headers: { Authorization: `Bearer ${jwt}` } }),
   },
   users: {
-    list: (p?: string) =>
-      r(`${AUTH_URL}/admin/users${p ? `?platform=${p}` : ""}`, { headers: { "x-admin-key": adminKey() } }),
+    list: () =>
+      r(`${AUTH_URL}/admin/users`, { headers: { "x-admin-key": adminKey() } }),
     toggleBlock: (id: string) =>
       r(`${AUTH_URL}/admin/users/${id}/block`, { method: "PATCH", headers: { "x-admin-key": adminKey() } }),
     delete: (id: string) =>

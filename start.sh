@@ -35,6 +35,43 @@ case "$cmd" in
         echo $! > "$LOGS/auth.pid"
         sleep 4
       fi
+
+      echo "=== URL Shortener Backend (:8003) ==="
+      pid=$(lsof -ti :8003 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$ROOT/services/url-shortener"
+        nohup npx wrangler dev --port 8003 --inspector-port 9233 > "$LOGS/url-shortener.log" 2>&1 &
+        echo $! > "$LOGS/url-shortener.pid"
+        sleep 3
+      fi
+
+      echo "=== Web Frontend (:5173) ==="
+      dir="$ROOT/apps/web"
+      if [ -f "$dir/.env.example" ] && [ ! -f "$dir/.env" ]; then
+        cp "$dir/.env.example" "$dir/.env"
+        echo "  created .env from .env.example"
+      fi
+      pid=$(lsof -ti :5173 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$dir"
+        nohup npx vite --port 5173 --host > "$LOGS/web.log" 2>&1 &
+        echo $! > "$LOGS/web.pid"
+        sleep 3
+      fi
+
+      echo "=== URL Shortener Frontend (:5174) ==="
+      dir="$ROOT/apps/url-shortener"
+      if [ -f "$dir/.env.example" ] && [ ! -f "$dir/.env" ]; then
+        cp "$dir/.env.example" "$dir/.env"
+        echo "  created .env from .env.example"
+      fi
+      pid=$(lsof -ti :5174 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$dir"
+        nohup npx vite --port 5174 --host > "$LOGS/url-shortener-web.log" 2>&1 &
+        echo $! > "$LOGS/url-shortener-web.pid"
+        sleep 3
+      fi
     fi
 
     if [ "$scope" = "all" ]; then
@@ -53,47 +90,6 @@ case "$cmd" in
         cd "$ROOT/services/admin"
         nohup npx wrangler dev --port 8002 --inspector-port 9232 > "$LOGS/admin.log" 2>&1 &
         echo $! > "$LOGS/admin.pid"
-        sleep 3
-      fi
-
-      echo "=== URL Shortener Backend (:8003) ==="
-      pid=$(lsof -ti :8003 2>/dev/null || true)
-      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
-        cd "$ROOT/services/url-shortener"
-        nohup npx wrangler dev --port 8003 --inspector-port 9233 > "$LOGS/url-shortener.log" 2>&1 &
-        echo $! > "$LOGS/url-shortener.pid"
-        sleep 3
-      fi
-    fi
-
-    if [ "$scope" = "core" ] || [ "$scope" = "all" ]; then
-      echo "=== Web Frontend (:5173) ==="
-      dir="$ROOT/apps/web"
-      if [ -f "$dir/.env.example" ] && [ ! -f "$dir/.env" ]; then
-        cp "$dir/.env.example" "$dir/.env"
-        echo "  created .env from .env.example"
-      fi
-      pid=$(lsof -ti :5173 2>/dev/null || true)
-      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
-        cd "$dir"
-        nohup npx vite --port 5173 --host > "$LOGS/web.log" 2>&1 &
-        echo $! > "$LOGS/web.pid"
-        sleep 3
-      fi
-    fi
-
-    if [ "$scope" = "all" ]; then
-      echo "=== URL Shortener Frontend (:5174) ==="
-      dir="$ROOT/apps/url-shortener"
-      if [ -f "$dir/.env.example" ] && [ ! -f "$dir/.env" ]; then
-        cp "$dir/.env.example" "$dir/.env"
-        echo "  created .env from .env.example"
-      fi
-      pid=$(lsof -ti :5174 2>/dev/null || true)
-      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
-        cd "$dir"
-        nohup npx vite --port 5174 --host > "$LOGS/url-shortener-web.log" 2>&1 &
-        echo $! > "$LOGS/url-shortener-web.pid"
         sleep 3
       fi
     fi
@@ -115,6 +111,9 @@ case "$cmd" in
       code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port/" 2>/dev/null || echo "DOWN")
       echo "  $name web     :$port → $code"
     done
+    echo ""
+    echo "All services running in background. Use './start.sh stop' to kill them."
+    echo "Use './start.sh logs <name>' to tail logs (e.g. './start.sh logs auth')."
     ;;
 
   stop)
@@ -223,8 +222,8 @@ case "$cmd" in
     echo "  studio:urls        Drizzle Studio (urls) :3001"
     echo "  logs <name>        Tail logs"
     echo ""
-    echo "Scopes: core  → auth + web (lighter, default)"
-    echo "        all   → all backends + frontends"
+    echo "Scopes: core  → auth + url-shortener + both frontends (default)"
+    echo "        all   → everything + payment + admin"
     echo ""
     echo "Backends: auth :8000 | payment :8001 | admin :8002 | urls :8003"
     echo "Frontends: web :5173 | url-shortener :5174"

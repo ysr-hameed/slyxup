@@ -21,7 +21,7 @@ const routeDef = createRoute({
           schema: apiResponseSchema(z.object({
             userId: z.string(),
             email: z.string(),
-            platform: z.string(),
+            platformId: z.string(),
           })),
         },
       },
@@ -42,7 +42,7 @@ route.openapi(routeDef, async (c) => {
 
   return c.json({
     success: true,
-    data: { userId: payload.sub, email: payload.email, platform: payload.platform },
+    data: { userId: payload.sub, email: payload.email, platformId: payload.platform_id },
   });
 });
 

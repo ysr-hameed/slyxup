@@ -10,6 +10,7 @@
   "dependencies": {
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-openapi": "^1.5.1",
+    "@slyxup/shared-auth": "workspace:*",
     "@slyxup/shared-db": "workspace:*",
     "@slyxup/shared-email": "workspace:*",
     "@slyxup/shared-logger": "workspace:*",
