@@ -40,7 +40,7 @@ export function createStorageClient(config: StorageClientConfig): StorageClient 
     },
 
     getDownloadUrl(key: string) {
-      return `${config.baseUrl}/api/storage/download/${key}`;
+      return `${config.baseUrl}/api/storage/download?key=${encodeURIComponent(key)}`;
     },
 
     async list(prefix) {

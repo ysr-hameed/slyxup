@@ -1,0 +1,3 @@
+JWT_SECRET=your-admin-jwt-secret
+ADMIN_KEY=your-admin-key
+ENVIRONMENT=development

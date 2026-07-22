@@ -3,6 +3,7 @@ import { createBillingClient, type BillingClient } from "@slyxup/billing-client"
 import { createEmailClient, type EmailClient } from "@slyxup/email-client";
 import { createAnalyticsClient, type AnalyticsClient } from "@slyxup/analytics-client";
 import { createStorageClient, type StorageClient } from "@slyxup/storage-client";
+import { createAdminClient, type AdminClient } from "@slyxup/admin-client";
 
 export interface SlyxupClient {
   auth: AuthClient;
@@ -10,6 +11,7 @@ export interface SlyxupClient {
   email: EmailClient;
   analytics: AnalyticsClient;
   storage: StorageClient;
+  admin: AdminClient;
 }
 
 export interface SlyxupClientConfig {
@@ -20,6 +22,7 @@ export interface SlyxupClientConfig {
   emailBaseUrl?: string;
   analyticsBaseUrl?: string;
   storageBaseUrl?: string;
+  adminBaseUrl?: string;
 }
 
 function baseUrl(config: SlyxupClientConfig, key: keyof SlyxupClientConfig, fallback: string): string {
@@ -33,6 +36,7 @@ export function createSlyxupClient(config: SlyxupClientConfig): SlyxupClient {
     email: createEmailClient({ baseUrl: baseUrl(config, "emailBaseUrl", "https://email.slyxup.in"), apiKey: config.apiKey }),
     analytics: createAnalyticsClient({ baseUrl: baseUrl(config, "analyticsBaseUrl", "https://analytics.slyxup.in"), apiKey: config.apiKey }),
     storage: createStorageClient({ baseUrl: baseUrl(config, "storageBaseUrl", "https://storage.slyxup.in"), apiKey: config.apiKey }),
+    admin: createAdminClient({ baseUrl: baseUrl(config, "adminBaseUrl", "https://admin.slyxup.in"), apiKey: config.apiKey }),
   };
 }
 
@@ -41,3 +45,4 @@ export { createBillingClient } from "@slyxup/billing-client";
 export { createEmailClient } from "@slyxup/email-client";
 export { createAnalyticsClient } from "@slyxup/analytics-client";
 export { createStorageClient } from "@slyxup/storage-client";
+export { createAdminClient } from "@slyxup/admin-client";

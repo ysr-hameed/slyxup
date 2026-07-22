@@ -33,3 +33,20 @@ export const oauthAccounts = sqliteTable("oauth_accounts", {
   providerUserId: text("provider_user_id").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const platforms = sqliteTable("platforms", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name"),
+  domain: text("domain"),
+  status: text("status").notNull().default("active"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const platformMemberships = sqliteTable("platform_memberships", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  platformId: text("platform_id").notNull(),
+  role: text("role").notNull().default("member"),
+  createdAt: text("created_at").notNull(),
+});

@@ -1,279 +1,177 @@
-# Slyxup Platform — Architecture Guide
+# Slyxup Platform Architecture
 
-## Overview
-
-Slyxup is a multi-account SaaS platform where **every core service** runs in its own Cloudflare account for isolation and separate free quotas.
+7 independent Cloudflare Workers, each in its own account. No shared infrastructure.
 
 ```
-auth.slyxup.in      → Account #1 (Auth Service)
-billing.slyxup.in   → Account #2 (Billing/Payment Service)
-email.slyxup.in     → Account #3 (Email Service)
-analytics.slyxup.in → Account #4 (Analytics Service)
-storage.slyxup.in   → Account #5 (R2 File Service)
-admin.slyxup.in     → Account #6 (Admin Panel)
+auth.slyxup.in         → Account #1 (Auth)
+billing.slyxup.in      → Account #2 (Billing)
+email.slyxup.in        → Account #3 (Email)
+analytics.slyxup.in    → Account #4 (Analytics)
+storage.slyxup.in      → Account #5 (Storage)
+notification.slyxup.in → Account #6 (Notification)
+admin.slyxup.in        → Account #7 (Admin)
 ```
-
-Products (task, crm, forms) are independent repos that consume the SDK.
 
 ## Structure
 
 ```
 ├── packages/
-│   ├── shared/           → Types, JWT, crypto, Zod validation, OpenAPI helpers
-│   ├── logger/           → Structured JSON logger
-│   ├── sdk/              → Unified client wrapping all services
-│   ├── auth-client/      → Auth service HTTP client
-│   ├── billing-client/   → Billing service HTTP client
-│   ├── email-client/     → Email service HTTP client
-│   ├── analytics-client/ → Analytics service HTTP client
-│   ├── storage-client/   → Storage service HTTP client
-│   └── ui/               → Shared React components (Tailwind v4)
+│   ├── shared/          → Types, JWT, crypto, Zod validation, OpenAPI helpers
+│   ├── logger/          → Structured JSON logger
+│   ├── sdk/             → Unified client wrapping all 7 service clients
+│   ├── auth-client/     → Auth service HTTP client
+│   ├── billing-client/  → Billing service HTTP client
+│   ├── email-client/    → Email service HTTP client
+│   ├── analytics-client/→ Analytics service HTTP client
+│   ├── storage-client/  → Storage service HTTP client
+│   ├── admin-client/    → Admin service HTTP client
+│   └── ui/              → Shared React components (Tailwind v4)
 │
 ├── platform/
-│   ├── auth-service/     → Auth Worker (Hono + OpenAPI, own D1 schema)
-│   ├── billing-service/  → Billing Worker (Paddle, own D1 schema)
-│   ├── email-service/    → Email Worker (Brevo API, no DB)
-│   ├── analytics-service/→ Analytics Worker (D1, own schema)
-│   ├── storage-service/  → Storage Worker (R2, no DB)
-│   └── admin-service/    → Admin API Worker (D1, own schema)
-│
-├── products/
-│   ├── admin/            → Admin React SPA (Vite + Tailwind)
-│   └── _template/        → Scaffold for new SaaS apps (api + web)
+│   ├── auth-service/        → Auth Worker (Hono + OpenAPI, own D1)
+│   ├── billing-service/     → Billing Worker (Paddle, own D1)
+│   ├── email-service/       → Email Worker (Brevo API, no DB)
+│   ├── analytics-service/   → Analytics Worker (own D1)
+│   ├── storage-service/     → Storage Worker (R2, no DB)
+│   ├── notification-service/→ Notification Worker (own D1)
+│   └── admin-service/       → Admin API Worker (own D1)
 ```
 
-Each platform service manages its **own database schema** locally at `src/schema/index.ts` with a `src/db.ts` factory. No shared `@slyxup/database` package.
+Every service owns its own schema. Every service can become its own repo without refactoring.
 
-## Tech Stack
-
-- **Runtime**: Cloudflare Workers (ES modules)
-- **API Framework**: Hono + @hono/zod-openapi
-- **Database**: D1 + Drizzle ORM (SQLite), per-service schema
-- **Auth**: JWT (HS256) + Session tokens + Google OAuth
-- **Payments**: Paddle (adapter pattern for Stripe/Razorpay)
-- **Email**: Brevo API (formerly Sendinblue)
-- **Storage**: R2 (S3-compatible)
-- **Frontend**: React 19 + Vite + Tailwind v4
-- **Package Manager**: pnpm workspaces
-- **Language**: TypeScript (strict mode)
-
-## Service Patterns
-
-Every platform service follows the same pattern:
+## Service pattern
 
 ```
 platform/{name}-service/
 ├── src/
-│   ├── index.ts          → OpenAPIHono app, CORS, middlewares
-│   ├── db.ts             → Drizzle D1 factory
-│   ├── schema/index.ts   → Drizzle ORM schema tables
-│   ├── routes/           → Route handlers (one file per resource)
-├── migrations/           → D1 SQL migration files
-├── wrangler.jsonc        → Worker configuration
-├── .dev.vars             → Local env values (real secrets)
-├── .dev.vars.example     → Local env template (no secrets)
-├── package.json          → Dependencies
-└── tsconfig.json         → TypeScript config
+│   ├── index.ts        → OpenAPIHono app, CORS, middlewares
+│   ├── db.ts           → Drizzle D1 factory (services with DB only)
+│   ├── schema/index.ts → Drizzle ORM tables (services with DB only)
+│   ├── routes/         → Route handlers
+├── migrations/         → D1 SQL migration files
+├── wrangler.jsonc      → Worker config
+├── .dev.vars           → Local secrets (gitignored)
+├── .dev.vars.example   → Template without secrets
+├── package.json
+└── tsconfig.json
 ```
 
-### Pattern for services with DB (auth, billing, analytics, admin)
-```ts
-// db.ts
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "./schema/index";
-export function createDb(db: D1Database) {
-  return drizzle(db, { schema });
-}
+## Database schema per service
+
+| Service      | Tables                                                          |
+|--------------|-----------------------------------------------------------------|
+| Auth         | users, sessions, oauth_accounts, platforms, platform_memberships |
+| Billing      | plans, subscriptions, invoices                                  |
+| Analytics    | events, page_views                                              |
+| Notification | notification_templates, notification_logs                        |
+| Admin        | admin_users, audit_logs                                         |
+| Email        | No DB — uses Brevo API directly                                 |
+| Storage      | No DB — uses R2 bindings directly                               |
+
+## API endpoints
+
+### Auth (port 8000)
 ```
-```ts
-// schema/index.ts
-import { sqliteTable, text } from "drizzle-orm/sqlite-core";
-export const users = sqliteTable("users", { ... });
-```
-
-### Pattern for services without DB (email, storage)
-No `db.ts` or `schema/` — use env bindings directly (BREVO_API_KEY, R2, etc.).
-
-## Key Conventions
-
-### 1. Import Pattern — SDK Clients (for products)
-```ts
-import { createSlyxupClient } from "@slyxup/sdk";
-const api = createSlyxupClient({ apiKey: "..." });
+POST /api/auth/register         POST /api/auth/login
+POST /api/auth/logout           GET  /api/auth/me
+GET  /api/auth/verify           GET  /api/auth/google
+GET  /api/auth/google/callback
 ```
 
-### 2. Import Pattern — Platform Services
-```ts
-import { setupOpenApi, generateId } from "@slyxup/shared";
-import { logger, createHonoErrorHandler } from "@slyxup/logger";
-// Local schema
-import { createDb } from "./db";
-import * as schema from "./schema/index";
+### Billing (port 8001)
+```
+GET  /api/billing/plans         POST /api/billing/create-checkout
+POST /api/billing/create-portal GET  /api/billing/subscription
+POST /api/billing/webhook
 ```
 
-### 3. API Response Format
-```json
-{ "success": true, "data": { ... } }
-{ "success": false, "error": "message" }
+### Email (port 8002)
+```
+POST /api/email/send
 ```
 
-### 4. Authentication
-- **Service-to-service**: `X-API-Key` header
-- **User-to-service**: `Authorization: Bearer <jwt>` header
-- **Admin**: `X-Admin-Key` header or JWT
+### Analytics (port 8003)
+```
+POST /api/analytics/event       POST /api/analytics/pageview
+GET  /api/analytics/events      GET  /api/analytics/summary
+```
 
-### 5. Error Handling
-All services use `createHonoErrorHandler()` from `@slyxup/logger`.
+### Storage (port 8004)
+```
+POST /api/storage/upload        GET  /api/storage/download?key=
+GET  /api/storage/list
+```
 
-### 6. Logging
-Structured JSON logging via `@slyxup/logger`. Every request is logged with method, path, status, and duration.
+### Notification (port 8006)
+```
+POST /api/notification/send     GET  /api/notification/logs
+```
 
-## Database (D1 per Service)
-
-| Service    | Tables                          | Schema file                          |
-|------------|---------------------------------|--------------------------------------|
-| Auth       | users, sessions, oauth_accounts, platforms, platform_memberships | `platform/auth-service/src/schema/index.ts` |
-| Billing    | plans, subscriptions, invoices  | `platform/billing-service/src/schema/index.ts` |
-| Analytics  | events, page_views              | `platform/analytics-service/src/schema/index.ts` |
-| Admin      | admin_users, audit_logs         | `platform/admin-service/src/schema/index.ts` |
-
-Email and Storage have no DB — they use Brevo API and R2 bindings directly.
-
-Migrations: `pnpm --filter @slyxup/{service}-service exec wrangler d1 migrations apply slyxup-{service} --local`
+### Admin (port 8005)
+```
+GET  /api/admin/dashboard       GET  /api/admin/users
+POST /api/admin/users           GET  /api/admin/audit-logs
+POST /api/admin/audit-logs
+```
 
 ## Development
 
 ```bash
-# Install
 pnpm install
+pnpm --filter @slyxup/auth-service dev         # port 8000
+pnpm --filter @slyxup/billing-service dev      # port 8001
+pnpm --filter @slyxup/email-service dev        # port 8002
+pnpm --filter @slyxup/analytics-service dev    # port 8003
+pnpm --filter @slyxup/storage-service dev      # port 8004
+pnpm --filter @slyxup/admin-service dev        # port 8005
+pnpm --filter @slyxup/notification-service dev # port 8006
 
-# Run all services in parallel
-pnpm --filter @slyxup/auth-service dev       # port 8000
-pnpm --filter @slyxup/billing-service dev    # port 8001
-pnpm --filter @slyxup/email-service dev      # port 8002
-pnpm --filter @slyxup/analytics-service dev  # port 8003
-pnpm --filter @slyxup/storage-service dev    # port 8004
-pnpm --filter @slyxup/admin-service dev      # port 8005
+# Typecheck one at a time
+npx --no-install tsc --noEmit  # from each package directory
 
-# Admin web app
-pnpm --filter @slyxup/admin-web dev          # port 5173 (Vite default)
-
-# Typecheck all
-pnpm -r typecheck
-
-# DB migrations (local)
+# DB migrations
 pnpm --filter @slyxup/auth-service exec wrangler d1 migrations apply slyxup-auth --local
 pnpm --filter @slyxup/billing-service exec wrangler d1 migrations apply slyxup-billing --local
 pnpm --filter @slyxup/analytics-service exec wrangler d1 migrations apply slyxup-analytics --local
 pnpm --filter @slyxup/admin-service exec wrangler d1 migrations apply slyxup-admin --local
+pnpm --filter @slyxup/notification-service exec wrangler d1 migrations apply slyxup-notification --local
 ```
 
-## API Endpoints
+## Key conventions
 
-### Auth (`auth.slyxup.in`)
-```
-POST   /api/auth/register          — Create account
-POST   /api/auth/login             — Email/password login
-POST   /api/auth/logout            — Revoke session
-GET    /api/auth/me                — Current user (JWT)
-GET    /api/auth/verify            — Verify email
-GET    /api/auth/google            — Google OAuth login
-GET    /api/auth/google/callback   — OAuth callback
-GET    /api/auth/docs              — Swagger UI
-```
-
-### Billing (`billing.slyxup.in`)
-```
-GET    /api/billing/plans          — List plans
-POST   /api/billing/create-checkout— Create checkout
-POST   /api/billing/create-portal  — Customer portal
-GET    /api/billing/subscription   — Get subscription
-POST   /api/billing/webhook        — Paddle webhooks
-```
-
-### Email (`email.slyxup.in`)
-```
-POST   /api/email/send             — Send email (Brevo)
-```
-
-### Analytics (`analytics.slyxup.in`)
-```
-POST   /api/analytics/event        — Track event
-POST   /api/analytics/pageview     — Track page view
-GET    /api/analytics/events       — List events
-GET    /api/analytics/summary      — Dashboard summary
-```
-
-### Storage (`storage.slyxup.in`)
-```
-POST   /api/storage/upload         — Upload to R2
-GET    /api/storage/download?key=  — Download from R2
-GET    /api/storage/list           — List files
-```
-
-### Admin (`admin.slyxup.in`)
-```
-GET    /api/admin/dashboard        — Stats
-GET    /api/admin/users            — List admin users
-POST   /api/admin/users            — Create admin user
-GET    /api/admin/audit-logs       — List audit logs
-POST   /api/admin/audit-logs       — Create audit log
-```
-
-## Client SDK Usage
-
-```ts
-import { createSlyxupClient } from "@slyxup/sdk";
-
-const client = createSlyxupClient({
-  apiKey: "sk-...",
-  authBaseUrl: "https://auth.slyxup.in",
-  billingBaseUrl: "https://billing.slyxup.in",
-  // ... or use defaults
-});
-
-// Usage
-const { jwt, user } = await client.auth.login({ email, password });
-const plans = await client.billing.listPlans();
-await client.email.send({ to: ["user@example.com"], subject: "Welcome", template: "welcome" });
-```
+1. **API response format**: `{ success: true, data: {...} }` or `{ success: false, error: "..." }`
+2. **Auth**: `Authorization: Bearer <jwt>` for users, `X-API-Key` for services, `X-Admin-Key` for admin
+3. **Error handling**: All services use `createHonoErrorHandler()` from `@slyxup/logger`
+4. **Logging**: Structured JSON via `@slyxup/logger` — every request logged with method, path, status, duration
 
 ## Deployment
 
-Each service is deployed to its own Cloudflare account:
+Each service deploys independently to its own Cloudflare account:
 
 ```bash
-# Set appropriate CLOUDFLARE_API_TOKEN per account
-pnpm --filter @slyxup/auth-service deploy       # Account #1
-pnpm --filter @slyxup/billing-service deploy    # Account #2
-pnpm --filter @slyxup/email-service deploy      # Account #3
-pnpm --filter @slyxup/analytics-service deploy  # Account #4
-pnpm --filter @slyxup/storage-service deploy    # Account #5
-pnpm --filter @slyxup/admin-service deploy      # Account #6
+pnpm --filter @slyxup/auth-service deploy         # Account #1
+pnpm --filter @slyxup/billing-service deploy      # Account #2
+pnpm --filter @slyxup/email-service deploy        # Account #3
+pnpm --filter @slyxup/analytics-service deploy    # Account #4
+pnpm --filter @slyxup/storage-service deploy      # Account #5
+pnpm --filter @slyxup/notification-service deploy # Account #6
+pnpm --filter @slyxup/admin-service deploy        # Account #7
 ```
 
-### DNS
-All services share the `slyxup.in` zone with CNAME records pointing to each Worker's `*.workers.dev` domain.
+DNS: CNAME records in the `slyxup.in` zone pointing to each Worker's `*.workers.dev` domain.
 
-## Adding a New Product
-
-1. Copy `products/_template/` to `products/{name}/`
-2. Create `apps/api/` worker (Hono) for backend logic
-3. Create `apps/web/` for the React frontend (Vite + Tailwind)
-4. Import SDK: `import { createSlyxupClient } from "@slyxup/sdk"`
-5. Deploy Worker and Pages to its own Cloudflare account
+## SDK usage
 
 ```ts
-// products/{name}/apps/web/src/main.tsx
 import { createSlyxupClient } from "@slyxup/sdk";
 
-const api = createSlyxupClient({ apiKey: import.meta.env.VITE_API_KEY });
-
-// Now just business logic — auth, billing, email all handled by platform
+const api = createSlyxupClient({ apiKey: "sk-..." });
+await api.auth.login({ email, password });
+await api.billing.listPlans();
+await api.storage.upload(file);
+await api.notification.send({ ... });
 ```
 
-## Scaling
+## Repository separation
 
-- **Current**: Each service is an independent Worker in its own CF account, with per-service D1 schemas
-- **Future**: If a service needs more resources, split it into a dedicated account with its own D1/R2
-- **No shared infrastructure**: Every account has independent free quotas
+Every `platform/{name}-service/` and `packages/{name}/` is isolated and can be extracted into its own Git repo. No service imports another service's code. The SDK is the only interface consumers ever see.

@@ -4,12 +4,13 @@ set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 LOGS="$ROOT/.logs"
 SERVICES=(
-  "auth:8000"
-  "billing:8001"
-  "email:8002"
-  "analytics:8003"
-  "storage:8004"
-  "admin:8005"
+  "auth-service:8000"
+  "billing-service:8001"
+  "email-service:8002"
+  "analytics-service:8003"
+  "storage-service:8004"
+  "admin-service:8005"
+  "notification-service:8006"
 )
 
 cmd="${1:-help}"
@@ -24,7 +25,7 @@ case "$cmd" in
     for entry in "${SERVICES[@]}"; do
       name="${entry%%:*}"
       port="${entry##*:}"
-      dir="$ROOT/services/$name"
+      dir="$ROOT/platform/$name"
       pid=$(lsof -ti :"$port" 2>/dev/null || true)
       if [ -n "$pid" ]; then
         echo "  $name already running (PID $pid)"

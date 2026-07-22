@@ -10,7 +10,8 @@
     "@slyxup/billing-client": "workspace:*",
     "@slyxup/email-client": "workspace:*",
     "@slyxup/analytics-client": "workspace:*",
-    "@slyxup/storage-client": "workspace:*"
+    "@slyxup/storage-client": "workspace:*",
+    "@slyxup/admin-client": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

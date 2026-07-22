@@ -172,6 +172,11 @@ export interface StorageEnv {
   ENVIRONMENT: string;
 }
 
+export interface NotificationEnv {
+  DB: D1Database;
+  ENVIRONMENT: string;
+}
+
 export interface AdminEnv {
   DB: D1Database;
   JWT_SECRET: string;

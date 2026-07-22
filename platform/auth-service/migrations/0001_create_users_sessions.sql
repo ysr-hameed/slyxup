@@ -31,3 +31,18 @@ CREATE TABLE IF NOT EXISTS oauth_accounts (
   provider_user_id TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS platforms (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT,
+  domain TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS platform_memberships (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  platform_id TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'member',
+  created_at TEXT NOT NULL
+);
