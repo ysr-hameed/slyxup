@@ -12,7 +12,7 @@ import tests from "./routes/tests";
 const app = new OpenAPIHono<{ Bindings: AdminEnv }>();
 
 app.use("*", honoLogger());
-app.use("/api/admin/*", cors());
+app.use("/api/admin/*", cors({ origin: "*", allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-Admin-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

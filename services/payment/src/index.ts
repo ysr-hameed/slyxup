@@ -12,7 +12,7 @@ import portal from "./routes/portal";
 const app = new OpenAPIHono<{ Bindings: PaymentEnv }>();
 
 app.use("*", honoLogger());
-app.use("/api/payment/*", cors());
+app.use("/api/payment/*", cors({ origin: "*", allowMethods: ["GET", "POST", "PATCH", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

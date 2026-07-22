@@ -22,52 +22,91 @@ shift || true
 
 case "$cmd" in
   start)
+    scope="${1:-core}"
+    shift || true
     mkdir -p "$LOGS"
-    echo "=== Backend Services ==="
-    idx=0
-    for s in "${SERVICES[@]}"; do
-      name="${s%%:*}"
-      port="${s##*:}"
-      pid=$(lsof -ti :$port 2>/dev/null || true)
-      if [ -n "$pid" ]; then
-        echo "  [$name] already running on :$port (PID $pid)"
-      else
-        echo "  [$name] starting on :$port..."
-        cd "$ROOT/services/$name"
-        insp=$((INSPECTOR_BASE + idx))
-        nohup npx wrangler dev --port "$port" --inspector-port "$insp" > "$LOGS/$name.log" 2>&1 &
-        echo $! > "$LOGS/$name.pid"
-        idx=$((idx + 1))
-      fi
-    done
 
-    echo "=== Frontend Apps ==="
-    for f in "${FRONTENDS[@]}"; do
-      name="${f%%:*}"
-      port="${f##*:}"
-      dir="$ROOT/apps/$name"
+    if [ "$scope" = "core" ] || [ "$scope" = "all" ]; then
+      echo "=== Auth Backend (:8000) ==="
+      pid=$(lsof -ti :8000 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$ROOT/services/auth"
+        nohup npx wrangler dev --port 8000 --inspector-port 9230 > "$LOGS/auth.log" 2>&1 &
+        echo $! > "$LOGS/auth.pid"
+        sleep 4
+      fi
+    fi
+
+    if [ "$scope" = "all" ]; then
+      echo "=== Payment Backend (:8001) ==="
+      pid=$(lsof -ti :8001 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$ROOT/services/payment"
+        nohup npx wrangler dev --port 8001 --inspector-port 9231 > "$LOGS/payment.log" 2>&1 &
+        echo $! > "$LOGS/payment.pid"
+        sleep 3
+      fi
+
+      echo "=== Admin Backend (:8002) ==="
+      pid=$(lsof -ti :8002 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$ROOT/services/admin"
+        nohup npx wrangler dev --port 8002 --inspector-port 9232 > "$LOGS/admin.log" 2>&1 &
+        echo $! > "$LOGS/admin.pid"
+        sleep 3
+      fi
+
+      echo "=== URL Shortener Backend (:8003) ==="
+      pid=$(lsof -ti :8003 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$ROOT/services/url-shortener"
+        nohup npx wrangler dev --port 8003 --inspector-port 9233 > "$LOGS/url-shortener.log" 2>&1 &
+        echo $! > "$LOGS/url-shortener.pid"
+        sleep 3
+      fi
+    fi
+
+    if [ "$scope" = "core" ] || [ "$scope" = "all" ]; then
+      echo "=== Web Frontend (:5173) ==="
+      dir="$ROOT/apps/web"
       if [ -f "$dir/.env.example" ] && [ ! -f "$dir/.env" ]; then
         cp "$dir/.env.example" "$dir/.env"
-        echo "  [$name] created .env from .env.example"
+        echo "  created .env from .env.example"
       fi
-      pid=$(lsof -ti :$port 2>/dev/null || true)
-      if [ -n "$pid" ]; then
-        echo "  [$name] already running on :$port (PID $pid)"
-      else
-        echo "  [$name] starting on :$port..."
+      pid=$(lsof -ti :5173 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
         cd "$dir"
-        nohup npx vite --port "$port" --host > "$LOGS/$name-web.log" 2>&1 &
-        echo $! > "$LOGS/$name-web.pid"
+        nohup npx vite --port 5173 --host > "$LOGS/web.log" 2>&1 &
+        echo $! > "$LOGS/web.pid"
+        sleep 3
       fi
-    done
+    fi
 
-    echo "=== Waiting for all servers (18s) ==="
-    sleep 18
+    if [ "$scope" = "all" ]; then
+      echo "=== URL Shortener Frontend (:5174) ==="
+      dir="$ROOT/apps/url-shortener"
+      if [ -f "$dir/.env.example" ] && [ ! -f "$dir/.env" ]; then
+        cp "$dir/.env.example" "$dir/.env"
+        echo "  created .env from .env.example"
+      fi
+      pid=$(lsof -ti :5174 2>/dev/null || true)
+      if [ -n "$pid" ]; then echo "  already running (PID $pid)"; else
+        cd "$dir"
+        nohup npx vite --port 5174 --host > "$LOGS/url-shortener-web.log" 2>&1 &
+        echo $! > "$LOGS/url-shortener-web.pid"
+        sleep 3
+      fi
+    fi
+
+    echo ""
     echo "=== Status ==="
     for s in "${SERVICES[@]}"; do
       name="${s%%:*}"
       port="${s##*:}"
-      code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port/api/$name/me" 2>/dev/null || echo "DOWN")
+      path="/api/auth/me"
+      [ "$name" = "payment" ] && path="/api/payment/subscription?userId=x&platform=test"
+      [ "$name" = "url-shortener" ] && path="/api/urls"
+      code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port$path" 2>/dev/null || echo "DOWN")
       echo "  $name api     :$port → $code"
     done
     for f in "${FRONTENDS[@]}"; do
@@ -96,7 +135,8 @@ case "$cmd" in
   restart)
     "$0" stop
     sleep 2
-    "$0" start
+    shift || true
+    "$0" start "${1:-core}"
     ;;
 
   status)
@@ -106,7 +146,10 @@ case "$cmd" in
       port="${s##*:}"
       pid=$(lsof -ti :$port 2>/dev/null || true)
       if [ -n "$pid" ]; then
-        code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port/api/$name/me" 2>/dev/null || echo "?")
+        path="/api/auth/me"
+        [ "$name" = "payment" ] && path="/api/payment/subscription?userId=x&platform=test"
+        [ "$name" = "url-shortener" ] && path="/api/urls"
+        code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$port$path" 2>/dev/null || echo "?")
         echo "  $name api :$port RUNNING (PID $pid) HTTP $code"
       else
         echo "  $name api :$port STOPPED"
@@ -168,17 +211,20 @@ case "$cmd" in
     ;;
 
   *)
-    echo "Usage: $0 <command>"
+    echo "Usage: $0 <command> [scope]"
     echo ""
     echo "Commands:"
-    echo "  start              Start all backends + frontends"
+    echo "  start [core|all]   Start services (core=auth+web, all=everything)"
     echo "  stop               Stop everything"
-    echo "  restart            Restart everything"
+    echo "  restart [core|all] Restart with scope"
     echo "  status             Show all server statuses"
     echo "  migrate            Run all DB migrations"
     echo "  studio             Drizzle Studio (shared-db) :3000"
     echo "  studio:urls        Drizzle Studio (urls) :3001"
     echo "  logs <name>        Tail logs"
+    echo ""
+    echo "Scopes: core  → auth + web (lighter, default)"
+    echo "        all   → all backends + frontends"
     echo ""
     echo "Backends: auth :8000 | payment :8001 | admin :8002 | urls :8003"
     echo "Frontends: web :5173 | url-shortener :5174"

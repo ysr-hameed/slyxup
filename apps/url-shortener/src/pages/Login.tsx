@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { auth } from "../lib/api";
 
-export default function Login() {
-  const navigate = useNavigate();
+interface Props {
+  onLogin: (jwt: string, user: any) => void;
+}
+
+export default function Login({ onLogin }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,9 +17,7 @@ export default function Login() {
     setLoading(true); setError("");
     const res: any = await auth.login({ email, password });
     if (res.success) {
-      localStorage.setItem("jwt", res.data.jwt);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      navigate("/dashboard");
+      onLogin(res.data.jwt, res.data.user);
     } else setError(res.error || "Login failed");
     setLoading(false);
   };

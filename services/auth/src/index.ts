@@ -15,7 +15,7 @@ import adminUsers from "./routes/admin-users";
 const app = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors());
+app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-Admin-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

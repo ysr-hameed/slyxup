@@ -13,7 +13,7 @@ interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>();
-app.use("*", cors());
+app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization"] }));
 app.use("*", async (c, next) => {
   const start = Date.now();
   await next();
