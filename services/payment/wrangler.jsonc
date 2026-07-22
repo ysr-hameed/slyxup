@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "payment",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "slyxup-payment",
+      "database_id": "abd9f6ae-9937-4be4-865f-dff0c1c4262c",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "PADDLE_ENVIRONMENT": "sandbox",
+    "ENVIRONMENT": "development"
+  }
+}

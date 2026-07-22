@@ -1,0 +1,4 @@
+PADDLE_API_KEY=your-paddle-api-key
+PADDLE_WEBHOOK_SECRET=your-paddle-webhook-secret
+PADDLE_ENVIRONMENT=sandbox
+ENVIRONMENT=development

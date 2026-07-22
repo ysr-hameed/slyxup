@@ -1,0 +1,23 @@
+{
+  "name": "@slyxup/admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@slyxup/shared-types": "workspace:*",
+    "@slyxup/shared-utils": "workspace:*",
+    "@slyxup/shared-db": "workspace:*",
+    "@slyxup/shared-logger": "workspace:*",
+    "drizzle-orm": "^0.42.0",
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "wrangler": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
