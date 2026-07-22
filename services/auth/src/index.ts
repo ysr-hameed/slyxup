@@ -10,6 +10,7 @@ import verify from "./routes/verify";
 import logout from "./routes/logout";
 import me from "./routes/me";
 import google from "./routes/google";
+import adminUsers from "./routes/admin-users";
 
 const app = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -34,6 +35,7 @@ app.route("/api/auth", verify);
 app.route("/api/auth", logout);
 app.route("/api/auth", me);
 app.route("/api/auth", google);
+app.route("/api/auth/admin", adminUsers);
 
 app.doc("/api/auth/openapi.json", {
   openapi: "3.0.0",

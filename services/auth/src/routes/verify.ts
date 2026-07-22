@@ -11,7 +11,7 @@ const routeDef = createRoute({
   tags: ["Auth"],
   request: {
     headers: z.object({
-      authorization: z.string().describe("Bearer <jwt>"),
+      authorization: z.string().optional().describe("Bearer <jwt>"),
     }),
   },
   responses: {

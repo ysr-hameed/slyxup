@@ -54,6 +54,11 @@ route.openapi(routeDef, async (c) => {
   if (platform && user.platform !== platform)
     return c.json({ success: false, error: "Invalid email or password" }, 401);
 
+  if (user.blocked)
+    return c.json({ success: false, error: "Account is blocked" }, 403);
+  if (user.deletedAt)
+    return c.json({ success: false, error: "Account has been deleted" }, 403);
+
   const sessionId = generateId();
   const token = generateToken();
   const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
