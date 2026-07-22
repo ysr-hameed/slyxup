@@ -13,6 +13,7 @@ const routeDef = createRoute({
   request: { body: { content: { "application/json": { schema: sendEmailSchema } } } },
   responses: {
     200: { content: { "application/json": { schema: apiResponseSchema(z.object({ id: z.string() })) } }, description: "Email sent" },
+    500: { content: { "application/json": { schema: apiResponseSchema(z.any()) } }, description: "Send failed" },
   },
 });
 
