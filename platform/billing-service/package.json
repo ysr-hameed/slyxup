@@ -1,0 +1,25 @@
+{
+  "name": "@slyxup/billing-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8001",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@slyxup/shared": "workspace:*",
+    "@slyxup/logger": "workspace:*",
+    "hono": "^4.7.0",
+    "@hono/zod-openapi": "^0.19.0",
+    "@hono/swagger-ui": "^0.5.0",
+    "zod": "^3.24.0",
+    "drizzle-orm": "^0.38.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250201.0",
+    "wrangler": "^3.107.0",
+    "typescript": "^5.7.0"
+  }
+}

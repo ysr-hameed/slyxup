@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "billing",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "slyxup-billing",
+    "database_id": "",
+    "migrations_dir": "migrations"
+  }],
+  "routes": [{ "pattern": "billing.slyxup.in", "custom_domain": true }],
+  "vars": { "ENVIRONMENT": "development" }
+}

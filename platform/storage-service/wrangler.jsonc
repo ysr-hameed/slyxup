@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "storage",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [{
+    "binding": "R2",
+    "bucket_name": "slyxup-storage",
+    "preview_bucket_name": "slyxup-storage-dev"
+  }],
+  "routes": [{ "pattern": "storage.slyxup.in", "custom_domain": true }],
+  "vars": { "ENVIRONMENT": "development", "R2_PUBLIC_URL": "https://storage.slyxup.in" }
+}
