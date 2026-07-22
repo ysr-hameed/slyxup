@@ -1,20 +1,33 @@
-import { Hono } from "hono";
-import type { PaymentEnv, ApiResponse } from "@slyxup/shared-types";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import type { PaymentEnv } from "@slyxup/shared-types";
+import { apiResponseSchema, portalSchema } from "@slyxup/shared-utils";
 
-const route = new Hono<{ Bindings: PaymentEnv }>();
+const route = new OpenAPIHono<{ Bindings: PaymentEnv }>();
 
-route.post("/portal", async (c) => {
-  let body: { customerId?: string; returnUrl?: string };
-  try {
-    body = await c.req.json();
-  } catch {
-    return c.json<ApiResponse>({ success: false, error: "Invalid JSON body" }, 400);
-  }
+const routeDef = createRoute({
+  method: "post",
+  path: "/portal",
+  summary: "Create a Paddle customer portal session",
+  tags: ["Payment"],
+  request: {
+    body: { content: { "application/json": { schema: portalSchema } } },
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: apiResponseSchema(z.object({ url: z.string() })),
+        },
+      },
+      description: "Portal URL created",
+    },
+    400: { description: "customerId is required" },
+    502: { description: "Paddle API error" },
+  },
+});
 
-  const { customerId, returnUrl } = body;
-  if (!customerId) {
-    return c.json<ApiResponse>({ success: false, error: "customerId is required" }, 400);
-  }
+route.openapi(routeDef, async (c) => {
+  const { customerId, returnUrl } = c.req.valid("json");
 
   try {
     const isSandbox = c.env.PADDLE_ENVIRONMENT === "sandbox";
@@ -34,17 +47,17 @@ route.post("/portal", async (c) => {
     if (!resp.ok) {
       const errText = await resp.text();
       console.error("Paddle portal error:", resp.status, errText);
-      return c.json<ApiResponse>({ success: false, error: "Failed to create portal session" }, 502);
+      return c.json({ success: false, error: "Failed to create portal session" }, 502);
     }
 
     const data = await resp.json() as any;
-    return c.json<ApiResponse<{ url: string }>>({
+    return c.json({
       success: true,
       data: { url: data?.data?.urls?.general?.url ?? "" },
     });
   } catch (err) {
     console.error("Paddle portal error:", err);
-    return c.json<ApiResponse>({ success: false, error: "Failed to create portal session" }, 502);
+    return c.json({ success: false, error: "Failed to create portal session" }, 502);
   }
 });
 

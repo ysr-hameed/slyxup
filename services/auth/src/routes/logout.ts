@@ -1,20 +1,40 @@
-import { Hono } from "hono";
-import type { AuthEnv, ApiResponse } from "@slyxup/shared-types";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import type { AuthEnv } from "@slyxup/shared-types";
+import { apiResponseSchema } from "@slyxup/shared-utils";
 import { createAuthDb, authSchema } from "@slyxup/shared-db";
 import { eq } from "drizzle-orm";
 
-const route = new Hono<{ Bindings: AuthEnv }>();
+const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
-route.post("/logout", async (c) => {
-  let body: { token?: string } = {};
-  try {
-    body = await c.req.json();
-  } catch { /* ignore */ }
-  if (body.token) {
+const routeDef = createRoute({
+  method: "post",
+  path: "/logout",
+  summary: "Logout and invalidate session token",
+  tags: ["Auth"],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ token: z.string().optional() }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: apiResponseSchema() } },
+      description: "Logged out successfully",
+    },
+  },
+});
+
+route.openapi(routeDef, async (c) => {
+  const { token } = c.req.valid("json");
+  if (token) {
     const db = createAuthDb(c.env.DB);
-    await db.delete(authSchema.sessions).where(eq(authSchema.sessions.token, body.token)).run();
+    await db.delete(authSchema.sessions).where(eq(authSchema.sessions.token, token)).run();
   }
-  return c.json<ApiResponse>({ success: true });
+  return c.json({ success: true });
 });
 
 export default route;

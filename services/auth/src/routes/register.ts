@@ -1,41 +1,42 @@
-import { Hono } from "hono";
-import type { AuthEnv, ApiResponse } from "@slyxup/shared-types";
-import {
-  hashPassword,
-  generateId,
-  validateEmail,
-  validatePassword,
-  validateName,
-} from "@slyxup/shared-utils";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import type { AuthEnv } from "@slyxup/shared-types";
+import { hashPassword, generateId, validateEmail, validatePassword, validateName, registerSchema, apiResponseSchema } from "@slyxup/shared-utils";
 import { createAuthDb, authSchema } from "@slyxup/shared-db";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/shared-logger";
 import { sendEmail, welcomeEmail } from "@slyxup/shared-email";
 
-const route = new Hono<{ Bindings: AuthEnv }>();
+const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
-route.post("/register", async (c) => {
-  let body: { email?: string; password?: string; name?: string; platform?: string };
-  try {
-    body = await c.req.json();
-  } catch {
-    return c.json<ApiResponse>({ success: false, error: "Invalid JSON body" }, 400);
-  }
+const routeDef = createRoute({
+  method: "post",
+  path: "/register",
+  summary: "Register a new user",
+  tags: ["Auth"],
+  request: {
+    body: { content: { "application/json": { schema: registerSchema } } },
+  },
+  responses: {
+    201: {
+      content: { "application/json": { schema: apiResponseSchema(z.object({ userId: z.string() })) } },
+      description: "User registered successfully",
+    },
+    400: { description: "Validation error" },
+    409: { description: "Email already registered" },
+  },
+});
 
-  const { email, password, name } = body;
-  const platform = body.platform || "default";
-
-  if (!email || !password)
-    return c.json<ApiResponse>({ success: false, error: "Email and password are required" }, 400);
+route.openapi(routeDef, async (c) => {
+  const { email, password, name, platform } = c.req.valid("json");
 
   if (!validateEmail(email))
-    return c.json<ApiResponse>({ success: false, error: "Invalid email" }, 400);
+    return c.json({ success: false, error: "Invalid email" }, 400);
 
   const pwCheck = validatePassword(password);
   if (!pwCheck.valid)
-    return c.json<ApiResponse>({ success: false, error: pwCheck.error }, 400);
+    return c.json({ success: false, error: pwCheck.error }, 400);
   if (name !== undefined && name !== "" && !validateName(name).valid)
-    return c.json<ApiResponse>({ success: false, error: validateName(name).error }, 400);
+    return c.json({ success: false, error: validateName(name).error }, 400);
 
   const db = createAuthDb(c.env.DB);
   const existing = await db
@@ -45,17 +46,13 @@ route.post("/register", async (c) => {
     .get();
 
   if (existing)
-    return c.json<ApiResponse>({ success: false, error: "Email already registered" }, 409);
+    return c.json({ success: false, error: "Email already registered" }, 409);
 
   const id = generateId();
   const passwordHash = await hashPassword(password);
 
   await db.insert(authSchema.users).values({
-    id,
-    email,
-    name: name ?? null,
-    platform,
-    passwordHash,
+    id, email, name: name ?? null, platform, passwordHash,
   }).run();
 
   logger.info("user_registered", { userId: id, email, platform });
@@ -68,17 +65,14 @@ route.post("/register", async (c) => {
         email,
         "Welcome to Slyxup!",
         welcomeEmail(name ?? email),
-      ).then((r: { success: boolean; messageId?: string; error?: string }) => {
+      ).then((r) => {
         if (r.success) logger.info("welcome_email_sent", { email, messageId: r.messageId });
         else logger.error("welcome_email_failed", { email, error: r.error });
       }),
     );
   }
 
-  return c.json<ApiResponse<{ userId: string }>>(
-    { success: true, data: { userId: id } },
-    201,
-  );
+  return c.json({ success: true, data: { userId: id } }, 201);
 });
 
 export default route;

@@ -1,16 +1,37 @@
-import { Hono } from "hono";
-import type { PaymentEnv, ApiResponse } from "@slyxup/shared-types";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import type { PaymentEnv } from "@slyxup/shared-types";
+import { apiResponseSchema } from "@slyxup/shared-utils";
 import { createPaymentDb, paymentSchema } from "@slyxup/shared-db";
 import { generateId } from "@slyxup/shared-utils";
 import { eq } from "drizzle-orm";
 import { getEnv } from "../services/paddle";
 
-const route = new Hono<{ Bindings: PaymentEnv }>();
+const route = new OpenAPIHono<{ Bindings: PaymentEnv }>();
 
-route.post("/webhook", async (c) => {
+const routeDef = createRoute({
+  method: "post",
+  path: "/webhook",
+  summary: "Handle Paddle webhook events",
+  tags: ["Payment"],
+  request: {
+    body: { content: { "application/json": { schema: z.any() } } },
+    headers: z.object({
+      "paddle-signature": z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: apiResponseSchema() } },
+      description: "Webhook processed",
+    },
+    400: { description: "Missing or invalid signature" },
+  },
+});
+
+route.openapi(routeDef, async (c) => {
   const signature = c.req.header("paddle-signature");
   if (!signature) {
-    return c.json<ApiResponse>({ success: false, error: "Missing paddle-signature" }, 400);
+    return c.json({ success: false, error: "Missing paddle-signature" }, 400);
   }
 
   const rawBody = await c.req.text();
@@ -18,11 +39,10 @@ route.post("/webhook", async (c) => {
 
   const event = client.webhooks.unmarshal(rawBody, secret, signature);
   if (!event) {
-    return c.json<ApiResponse>({ success: false, error: "Invalid signature" }, 400);
+    return c.json({ success: false, error: "Invalid signature" }, 400);
   }
 
   const db = createPaymentDb(c.env.DB);
-
   const data = event.data as any;
 
   switch (event.eventType) {
@@ -74,7 +94,7 @@ route.post("/webhook", async (c) => {
     }
   }
 
-  return c.json<ApiResponse>({ success: true });
+  return c.json({ success: true });
 });
 
 export default route;

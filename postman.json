@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Slyxup API (Local)",
-    "description": "Auth (8000) + Payment (8001) + Admin (8002)\n\n1. cd services/auth && pnpm dev\n2. cd services/payment && pnpm dev\n3. cd services/admin && pnpm dev",
+    "description": "Slyxup API Collection\n\n🚀 AUTOMATED SETUP:\nPostman → Import → Import From Link:\n  http://localhost:8000/api/auth/openapi.json\n  http://localhost:8001/api/payment/openapi.json\n  http://localhost:8002/api/admin/openapi.json\n\nOr view interactive docs in browser:\n  http://localhost:8000/api/auth/docs (Swagger UI)\n  http://localhost:8001/api/payment/docs (Swagger UI)\n  http://localhost:8002/api/admin/docs (Swagger UI)\n\nManual dev:\n  1. cd services/auth && pnpm dev\n  2. cd services/payment && pnpm dev\n  3. cd services/admin && pnpm dev\n\n⚠️ When you add a NEW API endpoint:\n  Just define the route with zod-openapi → the /openapi.json updates automatically!\n  Import again in Postman to sync instantly.",
     "schema": "https://schema.getpostman.com/collection/v2.1.0/collection.json"
   },
   "variable": [

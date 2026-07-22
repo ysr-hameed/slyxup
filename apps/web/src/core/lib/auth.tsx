@@ -1,25 +1,29 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { api } from "./api";
 
+interface User {
+  id: string; email: string; name: string | null; platform: string;
+}
+
 interface AuthState {
   jwt: string | null;
-  user: { id: string; email: string; name: string | null } | null;
+  user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, name?: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, name?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthState | null>(null);
+const AuthCtx = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [jwt, setJwt] = useState<string | null>(() => localStorage.getItem("jwt"));
-  const [user, setUser] = useState<AuthState["user"]>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (jwt) {
-      api.auth.me(jwt).then((res) => {
+      api.auth.me(jwt).then((res: any) => {
         if (res.success) setUser(res.data);
         else { localStorage.removeItem("jwt"); setJwt(null); }
         setLoading(false);
@@ -28,37 +32,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [jwt]);
 
   const login = async (email: string, password: string) => {
-    const res = await api.auth.login({ email, password });
+    const res: any = await api.auth.login({ email, password });
     if (res.success) {
       localStorage.setItem("jwt", res.data.jwt);
       setJwt(res.data.jwt);
       setUser(res.data.user);
-      return true;
+      return { success: true };
     }
-    return false;
+    return { success: false, error: res.error };
   };
 
   const register = async (email: string, password: string, name?: string) => {
-    const res = await api.auth.register({ email, password, name });
-    return res.success;
+    const res: any = await api.auth.register({ email, password, name });
+    if (res.success) return { success: true };
+    return { success: false, error: res.error };
   };
 
   const logout = () => {
-    localStorage.removeItem("jwt");
-    setJwt(null);
-    setUser(null);
+    localStorage.removeItem("jwt"); setJwt(null); setUser(null);
     api.auth.logout(jwt ?? "");
   };
 
   return (
-    <AuthContext.Provider value={{ jwt, user, loading, login, register, logout }}>
+    <AuthCtx.Provider value={{ jwt, user, loading, login, register, logout }}>
       {children}
-    </AuthContext.Provider>
+    </AuthCtx.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
+  const ctx = useContext(AuthCtx);
   if (!ctx) throw new Error("useAuth must be inside AuthProvider");
   return ctx;
 }

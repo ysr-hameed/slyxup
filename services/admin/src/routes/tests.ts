@@ -1,18 +1,41 @@
-import { Hono } from "hono";
-import type { AdminEnv, ApiResponse } from "@slyxup/shared-types";
-import { generateId } from "@slyxup/shared-utils";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import type { AdminEnv } from "@slyxup/shared-types";
+import { generateId, apiResponseSchema } from "@slyxup/shared-utils";
 import { createAdminDb, adminSchema, testSchema } from "@slyxup/shared-db";
 import { desc, eq } from "drizzle-orm";
 import { logger } from "@slyxup/shared-logger";
 import { adminAuthMiddleware } from "../middleware/adminAuth";
+import type { Context, Next } from "hono";
 
-const route = new Hono<{ Bindings: AdminEnv }>();
+const route = new OpenAPIHono<{ Bindings: AdminEnv }>();
 
-route.use("*", adminAuthMiddleware);
+route.use("*", adminAuthMiddleware as (c: Context, next: Next) => Promise<Response | void>);
 
-type TestCase = { name: string; endpoint: string; method: string; body?: unknown; headers?: Record<string, string>; expectStatus: number; expectSuccess?: boolean };
+const testCaseSchema = z.object({
+  name: z.string(),
+  endpoint: z.string(),
+  method: z.string(),
+  body: z.any().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  expectStatus: z.number(),
+  expectSuccess: z.boolean().optional(),
+});
 
-async function runTest(c: { env: AdminEnv }, tc: TestCase): Promise<{ passed: boolean; status: number; body: unknown; error: string | null }> {
+const testResultSchema = z.object({
+  test_name: z.string(),
+  passed: z.boolean(),
+  response_status: z.number().nullable(),
+  response_body: z.string().nullable(),
+  error: z.string().nullable(),
+});
+
+const summarySchema = z.object({
+  passed: z.boolean(),
+  total: z.number(),
+  passedCount: z.number(),
+});
+
+async function runTest(c: { env: AdminEnv }, tc: z.infer<typeof testCaseSchema>): Promise<{ passed: boolean; status: number; body: unknown; error: string | null }> {
   try {
     const url = `${tc.endpoint}`;
     const headers: Record<string, string> = { "Content-Type": "application/json", ...tc.headers };
@@ -32,16 +55,38 @@ async function runTest(c: { env: AdminEnv }, tc: TestCase): Promise<{ passed: bo
   }
 }
 
-route.post("/auth", async (c) => {
+const authTestRoute = createRoute({
+  method: "post",
+  path: "/auth",
+  summary: "Run auth integration tests",
+  tags: ["Admin"],
+  security: [{ Bearer: [] }],
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: apiResponseSchema(z.object({
+            results: z.array(testResultSchema),
+            summary: summarySchema,
+          })),
+        },
+      },
+      description: "Test results",
+    },
+    401: { description: "Unauthorized" },
+  },
+});
+
+route.openapi(authTestRoute, async (c) => {
   const db = createAdminDb(c.env.DB);
   const adminId = (c as any).get("adminId");
   const base = c.env.AUTH_URL;
   const testEmail = `test-${Date.now()}@slyxup-test.com`;
   const testPassword = "TestPass123!";
-  const results: Array<{ test_name: string; passed: boolean; response_status: number | null; response_body: string | null; error: string | null }> = [];
+  const results: Array<z.infer<typeof testResultSchema>> = [];
 
   const testPlatform = "test-platform";
-  const tests: TestCase[] = [
+  const tests: z.infer<typeof testCaseSchema>[] = [
     { name: "register", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 201, expectSuccess: true },
     { name: "register_duplicate", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 409, expectSuccess: false },
     { name: "login", endpoint: `${base}/login`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 200, expectSuccess: true },
@@ -57,7 +102,7 @@ route.post("/auth", async (c) => {
   }
 
   if (jwt) {
-    const authedTests: TestCase[] = [
+    const authedTests: z.infer<typeof testCaseSchema>[] = [
       { name: "verify", endpoint: `${base}/verify`, method: "GET", headers: { Authorization: `Bearer ${jwt}` }, expectStatus: 200, expectSuccess: true },
       { name: "me", endpoint: `${base}/me`, method: "GET", headers: { Authorization: `Bearer ${jwt}` }, expectStatus: 200, expectSuccess: true },
       { name: "verify_bad_token", endpoint: `${base}/verify`, method: "GET", headers: { Authorization: "Bearer invalid" }, expectStatus: 401, expectSuccess: false },
@@ -94,16 +139,41 @@ route.post("/auth", async (c) => {
 
   logger.info("auth_tests_completed", { adminId, allPassed, total: results.length });
 
-  return c.json<ApiResponse>({ success: true, data: { results, summary: { passed: allPassed, total: results.length, passedCount: results.filter((r) => r.passed).length } } });
+  return c.json({
+    success: true,
+    data: { results, summary: { passed: allPassed, total: results.length, passedCount: results.filter((r) => r.passed).length } },
+  });
 });
 
-route.post("/payment", async (c) => {
+const paymentTestRoute = createRoute({
+  method: "post",
+  path: "/payment",
+  summary: "Run payment integration tests",
+  tags: ["Admin"],
+  security: [{ Bearer: [] }],
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: apiResponseSchema(z.object({
+            results: z.array(testResultSchema),
+            summary: summarySchema,
+          })),
+        },
+      },
+      description: "Test results",
+    },
+    401: { description: "Unauthorized" },
+  },
+});
+
+route.openapi(paymentTestRoute, async (c) => {
   const db = createAdminDb(c.env.DB);
   const adminId = (c as any).get("adminId");
   const base = c.env.PAYMENT_URL;
-  const results: Array<{ test_name: string; passed: boolean; response_status: number | null; response_body: string | null; error: string | null }> = [];
+  const results: Array<z.infer<typeof testResultSchema>> = [];
 
-  const tests: TestCase[] = [
+  const tests: z.infer<typeof testCaseSchema>[] = [
     { name: "checkout_missing_fields", endpoint: `${base}/checkout`, method: "POST", body: {}, expectStatus: 400, expectSuccess: false },
     { name: "subscription_missing_userId", endpoint: `${base}/subscription`, method: "GET", expectStatus: 400, expectSuccess: false },
     { name: "subscription_valid", endpoint: `${base}/subscription?userId=nonexistent&platform=test-platform`, method: "GET", expectStatus: 200, expectSuccess: true },
@@ -140,22 +210,56 @@ route.post("/payment", async (c) => {
 
   logger.info("payment_tests_completed", { adminId, allPassed, total: results.length });
 
-  return c.json<ApiResponse>({ success: true, data: { results, summary: { passed: allPassed, total: results.length, passedCount: results.filter((r) => r.passed).length } } });
+  return c.json({
+    success: true,
+    data: { results, summary: { passed: allPassed, total: results.length, passedCount: results.filter((r) => r.passed).length } },
+  });
 });
 
-route.get("/results", async (c) => {
-  const db = createAdminDb(c.env.DB);
-  const limit = Math.min(Number(c.req.query("limit")) || 50, 200);
-  const results = await db.select().from(testSchema.testResults).orderBy(desc(testSchema.testResults.runAt)).limit(limit).all();
-  return c.json<ApiResponse>({ success: true, data: results });
+const resultsRoute = createRoute({
+  method: "get",
+  path: "/results",
+  summary: "Get test results",
+  tags: ["Admin"],
+  security: [{ Bearer: [] }],
+  request: {
+    query: z.object({ limit: z.coerce.number().optional() }),
+  },
+  responses: {
+    200: { content: { "application/json": { schema: apiResponseSchema(z.any()) } }, description: "Test results" },
+    401: { description: "Unauthorized" },
+  },
 });
 
-route.get("/results/:endpoint", async (c) => {
-  const endpoint = c.req.param("endpoint");
+route.openapi(resultsRoute, async (c) => {
   const db = createAdminDb(c.env.DB);
-  const limit = Math.min(Number(c.req.query("limit")) || 50, 200);
-  const results = await db.select().from(testSchema.testResults).where(eq(testSchema.testResults.endpoint, endpoint)).orderBy(desc(testSchema.testResults.runAt)).limit(limit).all();
-  return c.json<ApiResponse>({ success: true, data: results });
+  const limit = Math.min(Number(c.req.valid("query").limit) || 50, 200);
+  const data = await db.select().from(testSchema.testResults).orderBy(desc(testSchema.testResults.runAt)).limit(limit).all();
+  return c.json({ success: true, data });
+});
+
+const resultsByEndpointRoute = createRoute({
+  method: "get",
+  path: "/results/{endpoint}",
+  summary: "Get test results by endpoint",
+  tags: ["Admin"],
+  security: [{ Bearer: [] }],
+  request: {
+    params: z.object({ endpoint: z.string() }),
+    query: z.object({ limit: z.coerce.number().optional() }),
+  },
+  responses: {
+    200: { content: { "application/json": { schema: apiResponseSchema(z.any()) } }, description: "Test results" },
+    401: { description: "Unauthorized" },
+  },
+});
+
+route.openapi(resultsByEndpointRoute, async (c) => {
+  const { endpoint } = c.req.valid("param");
+  const limit = Math.min(Number(c.req.valid("query").limit) || 50, 200);
+  const db = createAdminDb(c.env.DB);
+  const data = await db.select().from(testSchema.testResults).where(eq(testSchema.testResults.endpoint, endpoint)).orderBy(desc(testSchema.testResults.runAt)).limit(limit).all();
+  return c.json({ success: true, data });
 });
 
 export default route;

@@ -7,6 +7,8 @@ export interface User {
   google_id: string | null;
   github_id: string | null;
   avatar_url: string | null;
+  blocked: number;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +76,7 @@ export interface JwtPayload {
 export interface AuthEnv {
   DB: D1Database;
   JWT_SECRET: string;
+  ADMIN_API_KEY: string;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   BREVO_API_KEY: string;

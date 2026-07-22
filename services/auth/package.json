@@ -8,17 +8,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hono/swagger-ui": "^0.6.1",
+    "@hono/zod-openapi": "^1.5.1",
+    "@slyxup/shared-db": "workspace:*",
+    "@slyxup/shared-email": "workspace:*",
+    "@slyxup/shared-logger": "workspace:*",
     "@slyxup/shared-types": "workspace:*",
     "@slyxup/shared-utils": "workspace:*",
-    "@slyxup/shared-db": "workspace:*",
-    "@slyxup/shared-logger": "workspace:*",
-    "@slyxup/shared-email": "workspace:*",
     "drizzle-orm": "^0.42.0",
-    "hono": "^4.0.0"
+    "hono": "^4.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
-    "wrangler": "^4.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
   }
 }

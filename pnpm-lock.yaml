@@ -25,7 +25,7 @@ importers:
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.0.0
-        version: 4.3.3(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0))
+        version: 4.3.3(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17
@@ -34,7 +34,7 @@ importers:
         version: 19.2.3(@types/react@19.2.17)
       '@vitejs/plugin-react':
         specifier: ^4.0.0
-        version: 4.7.0(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0))
+        version: 4.7.0(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
       tailwindcss:
         specifier: ^4.0.0
         version: 4.3.3
@@ -43,7 +43,7 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^6.0.0
-        version: 6.4.3(jiti@2.7.0)(lightningcss@1.32.0)
+        version: 6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
       wrangler:
         specifier: ^4.0.0
         version: 4.112.0(@cloudflare/workers-types@4.20260702.1)
@@ -69,9 +69,18 @@ importers:
       jose:
         specifier: ^6.0.0
         version: 6.2.3
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   services/admin:
     dependencies:
+      '@hono/swagger-ui':
+        specifier: ^0.6.1
+        version: 0.6.1(hono@4.12.31)
+      '@hono/zod-openapi':
+        specifier: ^1.5.1
+        version: 1.5.1(hono@4.12.31)(zod@4.4.3)
       '@slyxup/shared-db':
         specifier: workspace:*
         version: link:../../packages/shared-db
@@ -90,6 +99,9 @@ importers:
       hono:
         specifier: ^4.0.0
         version: 4.12.31
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.0.0
@@ -103,6 +115,12 @@ importers:
 
   services/auth:
     dependencies:
+      '@hono/swagger-ui':
+        specifier: ^0.6.1
+        version: 0.6.1(hono@4.12.31)
+      '@hono/zod-openapi':
+        specifier: ^1.5.1
+        version: 1.5.1(hono@4.12.31)(zod@4.4.3)
       '@slyxup/shared-db':
         specifier: workspace:*
         version: link:../../packages/shared-db
@@ -124,6 +142,9 @@ importers:
       hono:
         specifier: ^4.0.0
         version: 4.12.31
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.0.0
@@ -137,6 +158,12 @@ importers:
 
   services/payment:
     dependencies:
+      '@hono/swagger-ui':
+        specifier: ^0.6.1
+        version: 0.6.1(hono@4.12.31)
+      '@hono/zod-openapi':
+        specifier: ^1.5.1
+        version: 1.5.1(hono@4.12.31)(zod@4.4.3)
       '@paddle/paddle-node-sdk':
         specifier: ^1.0.0
         version: 1.10.0
@@ -158,6 +185,9 @@ importers:
       hono:
         specifier: ^4.0.0
         version: 4.12.31
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.0.0
@@ -170,6 +200,11 @@ importers:
         version: 4.112.0(@cloudflare/workers-types@4.20260702.1)
 
 packages:
+
+  '@asteasolutions/zod-to-openapi@8.5.0':
+    resolution: {integrity: sha512-SABbKiObg5dLRiTFnqiW1WWwGcg1BJfmHtT2asIBnBHg6Smy/Ms2KHc650+JI4Hw7lSkdiNebEGXpwoxfben8Q==}
+    peerDependencies:
+      zod: ^4.0.0
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -899,6 +934,24 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@hono/swagger-ui@0.6.1':
+    resolution: {integrity: sha512-sJTvldu1GPeEPfyeLG7gRj+W4vEuD+JDi+JjJ3TJs/DvMUtBLs0KJO5yokGegWWdy5qrbdnQGekbhgNRmPmYKQ==}
+    peerDependencies:
+      hono: '>=4.0.0'
+
+  '@hono/zod-openapi@1.5.1':
+    resolution: {integrity: sha512-ZaDdEIkn6PEGjIYHXJeyByg6yhvLzI+UXn968pWtahpwcQ6HMjQYXI3zNffTl0Wl9QZ79nUnGqiN1erEIu23fA==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      hono: '>=4.10.0'
+      zod: ^4.0.0
+
+  '@hono/zod-validator@0.9.0':
+    resolution: {integrity: sha512-n0ZSXmCiHVIp4Y5wlOOyZCeTd/rsawA/qW1cipB8QOYKZ9N8Tk0nZUZCXho9cu374AN4JpDNKioNKBJ/W+LBug==}
+    peerDependencies:
+      hono: '>=4.11.2'
+      zod: ^3.25.0 || ^4.0.0
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -1709,6 +1762,9 @@ packages:
     resolution: {integrity: sha512-wRNIrw4DmVLKQlbgOMdkMx27Wrpzes2hh5Jtbi2bjPd+4wJstWIqP5A+lscnqbm0xxmT5Bpg8Lec5ItEBwx6BQ==}
     engines: {node: '>=18'}
 
+  openapi3-ts@4.6.0:
+    resolution: {integrity: sha512-a4sfn6L2sIShhtzJqmjGrARvxAW/3F2BJDdyRVvNF9VhAsZSh5hSyI3a9TNvmzBxXmq66nY5LNT5bQcBxYAZZg==}
+
   path-to-regexp@6.3.0:
     resolution: {integrity: sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ==}
 
@@ -1918,13 +1974,26 @@ packages:
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
+  yaml@2.9.0:
+    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   youch-core@0.3.3:
     resolution: {integrity: sha512-ho7XuGjLaJ2hWHoK8yFnsUGy2Y5uDpqSTq1FkHLK4/oqKtyUU1AFbOOxY4IpC9f0fTLjwYbslUz0Po5BpD1wrA==}
 
   youch@4.1.0-beta.10:
     resolution: {integrity: sha512-rLfVLB4FgQneDr0dv1oddCVZmKjcJ6yX6mS4pU82Mq/Dt9a3cLZQ62pDBL4AUO+uVrCvtWz3ZFUL2HFAFJ/BXQ==}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
+
+  '@asteasolutions/zod-to-openapi@8.5.0(zod@4.4.3)':
+    dependencies:
+      openapi3-ts: 4.6.0
+      zod: 4.4.3
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -2375,6 +2444,23 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
+  '@hono/swagger-ui@0.6.1(hono@4.12.31)':
+    dependencies:
+      hono: 4.12.31
+
+  '@hono/zod-openapi@1.5.1(hono@4.12.31)(zod@4.4.3)':
+    dependencies:
+      '@asteasolutions/zod-to-openapi': 8.5.0(zod@4.4.3)
+      '@hono/zod-validator': 0.9.0(hono@4.12.31)(zod@4.4.3)
+      hono: 4.12.31
+      openapi3-ts: 4.6.0
+      zod: 4.4.3
+
+  '@hono/zod-validator@0.9.0(hono@4.12.31)(zod@4.4.3)':
+    dependencies:
+      hono: 4.12.31
+      zod: 4.4.3
+
   '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.34.5':
@@ -2660,12 +2746,12 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.3
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.3
 
-  '@tailwindcss/vite@4.3.3(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0))':
+  '@tailwindcss/vite@4.3.3(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))':
     dependencies:
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
       tailwindcss: 4.3.3
-      vite: 6.4.3(jiti@2.7.0)(lightningcss@1.32.0)
+      vite: 6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -2698,7 +2784,7 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
-  '@vitejs/plugin-react@4.7.0(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0))':
+  '@vitejs/plugin-react@4.7.0(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7)
@@ -2706,7 +2792,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.4.3(jiti@2.7.0)(lightningcss@1.32.0)
+      vite: 6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -3005,6 +3091,10 @@ snapshots:
 
   node-releases@2.0.51: {}
 
+  openapi3-ts@4.6.0:
+    dependencies:
+      yaml: 2.9.0
+
   path-to-regexp@6.3.0: {}
 
   pathe@2.0.3: {}
@@ -3155,7 +3245,7 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0):
+  vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.5)
@@ -3167,6 +3257,7 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.7.0
       lightningcss: 1.32.0
+      yaml: 2.9.0
 
   webidl-conversions@3.0.1: {}
 
@@ -3208,6 +3299,8 @@ snapshots:
 
   yallist@3.1.1: {}
 
+  yaml@2.9.0: {}
+
   youch-core@0.3.3:
     dependencies:
       '@poppinss/exception': 1.2.3
@@ -3220,3 +3313,5 @@ snapshots:
       '@speed-highlight/core': 1.2.17
       cookie: 1.1.1
       youch-core: 0.3.3
+
+  zod@4.4.3: {}

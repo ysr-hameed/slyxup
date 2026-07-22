@@ -1,6 +1,7 @@
-import { Hono } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
+import { swaggerUI } from "@hono/swagger-ui";
 import type { AuthEnv } from "@slyxup/shared-types";
 import { logger, createHonoErrorHandler } from "@slyxup/shared-logger";
 import register from "./routes/register";
@@ -10,7 +11,7 @@ import logout from "./routes/logout";
 import me from "./routes/me";
 import google from "./routes/google";
 
-const app = new Hono<{ Bindings: AuthEnv }>();
+const app = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 app.use("*", honoLogger());
 app.use("*", cors());
@@ -33,6 +34,14 @@ app.route("/api/auth", verify);
 app.route("/api/auth", logout);
 app.route("/api/auth", me);
 app.route("/api/auth", google);
+
+app.doc("/api/auth/openapi.json", {
+  openapi: "3.0.0",
+  info: { title: "Slyxup Auth API", version: "1.0.0" },
+  servers: [{ url: "http://localhost:8000", description: "Local dev" }],
+});
+
+app.get("/api/auth/docs", swaggerUI({ url: "/api/auth/openapi.json" }));
 
 app.notFound((c) => {
   logger.warn("not_found", { path: c.req.path, method: c.req.method });

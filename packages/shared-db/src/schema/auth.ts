@@ -1,4 +1,4 @@
-import { sqliteTable, text, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable(
   "users",
@@ -11,6 +11,8 @@ export const users = sqliteTable(
     googleId: text("google_id"),
     githubId: text("github_id"),
     avatarUrl: text("avatar_url"),
+    blocked: integer("blocked").notNull().default(0),
+    deletedAt: text("deleted_at"),
     createdAt: text("created_at").notNull().default("datetime('now')"),
     updatedAt: text("updated_at").notNull().default("datetime('now')"),
   },

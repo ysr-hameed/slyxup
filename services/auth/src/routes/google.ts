@@ -1,19 +1,42 @@
-import { Hono } from "hono";
-import type { AuthEnv, ApiResponse } from "@slyxup/shared-types";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import type { AuthEnv } from "@slyxup/shared-types";
+import { apiResponseSchema, signToken, generateToken, generateId } from "@slyxup/shared-utils";
 import { createAuthDb, authSchema } from "@slyxup/shared-db";
-import { signToken, generateToken, generateId } from "@slyxup/shared-utils";
 import { logger } from "@slyxup/shared-logger";
 import { eq } from "drizzle-orm";
 
-const route = new Hono<{ Bindings: AuthEnv }>();
+const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
-route.get("/google/login", (c) => {
+const loginRoute = createRoute({
+  method: "get",
+  path: "/google/login",
+  summary: "Get Google OAuth login URL",
+  tags: ["Auth"],
+  request: {
+    query: z.object({
+      platform: z.string().default("default"),
+    }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: apiResponseSchema(z.object({ url: z.string() })),
+        },
+      },
+      description: "Google OAuth URL",
+    },
+    500: { description: "Google login not configured" },
+  },
+});
+
+route.openapi(loginRoute, async (c) => {
   const clientId = c.env.GOOGLE_CLIENT_ID;
   if (!clientId) {
-    return c.json<ApiResponse>({ success: false, error: "Google login not configured" }, 500);
+    return c.json({ success: false, error: "Google login not configured" }, 500);
   }
 
-  const platform = c.req.query("platform") || "default";
+  const { platform } = c.req.valid("query");
   const redirectUri = `${new URL(c.req.url).origin}/api/auth/google/callback`;
   const url =
     "https://accounts.google.com/o/oauth2/v2/auth?" +
@@ -26,14 +49,30 @@ route.get("/google/login", (c) => {
       state: JSON.stringify({ platform }),
     });
 
-  return c.json<ApiResponse<{ url: string }>>({ success: true, data: { url } });
+  return c.json({ success: true, data: { url } });
 });
 
-route.get("/google/callback", async (c) => {
-  const code = c.req.query("code");
-  if (!code) {
-    return c.json<ApiResponse>({ success: false, error: "Authorization code missing" }, 400);
-  }
+const callbackRoute = createRoute({
+  method: "get",
+  path: "/google/callback",
+  summary: "Handle Google OAuth callback",
+  tags: ["Auth"],
+  request: {
+    query: z.object({
+      code: z.string(),
+      state: z.string().optional(),
+    }),
+  },
+  responses: {
+    302: { description: "Redirect to frontend with JWT" },
+    400: { description: "Missing authorization code" },
+    401: { description: "Authentication failed" },
+    500: { description: "Server error" },
+  },
+});
+
+route.openapi(callbackRoute, async (c) => {
+  const { code } = c.req.valid("query");
 
   const clientId = c.env.GOOGLE_CLIENT_ID;
   const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
@@ -55,7 +94,7 @@ route.get("/google/callback", async (c) => {
     if (!tokenResp.ok) {
       const errText = await tokenResp.text();
       logger.error("Google token exchange failed", { status: tokenResp.status, body: errText });
-      return c.json<ApiResponse>({ success: false, error: "Failed to authenticate with Google" }, 401);
+      return c.json({ success: false, error: "Failed to authenticate with Google" }, 401);
     }
 
     const tokens = await tokenResp.json() as { access_token: string; id_token?: string };
@@ -65,14 +104,11 @@ route.get("/google/callback", async (c) => {
     );
 
     if (!userResp.ok) {
-      return c.json<ApiResponse>({ success: false, error: "Failed to get user info" }, 401);
+      return c.json({ success: false, error: "Failed to get user info" }, 401);
     }
 
     const googleUser = await userResp.json() as {
-      id: string;
-      email: string;
-      name: string;
-      picture: string;
+      id: string; email: string; name: string; picture: string;
     };
 
     const db = createAuthDb(c.env.DB);
@@ -104,16 +140,12 @@ route.get("/google/callback", async (c) => {
         .run();
     } else {
       const newId = generateId();
-      const googlePlatform = new URL(c.req.url).searchParams.get("platform") || "default";
+      const platform = new URL(c.req.url).searchParams.get("platform") || "default";
       await db
         .insert(authSchema.users)
         .values({
-          id: newId,
-          email: googleUser.email,
-          name: googleUser.name,
-          platform: googlePlatform,
-          googleId: googleUser.id,
-          avatarUrl: googleUser.picture,
+          id: newId, email: googleUser.email, name: googleUser.name, platform,
+          googleId: googleUser.id, avatarUrl: googleUser.picture,
         })
         .run();
 
@@ -125,7 +157,7 @@ route.get("/google/callback", async (c) => {
     }
 
     if (!user) {
-      return c.json<ApiResponse>({ success: false, error: "Failed to create user" }, 500);
+      return c.json({ success: false, error: "Failed to create user" }, 500);
     }
 
     const sessionId = generateId();
@@ -139,14 +171,13 @@ route.get("/google/callback", async (c) => {
 
     const jwt = await signToken(
       { sub: user.id, email: user.email, platform: user.platform },
-      c.env.JWT_SECRET,
-      86400,
+      c.env.JWT_SECRET, 86400,
     );
 
     return c.redirect(`/auth/callback?jwt=${jwt}&token=${sessionToken}`);
   } catch (err) {
     logger.error("Google OAuth error", { error: err instanceof Error ? err.message : String(err) });
-    return c.json<ApiResponse>({ success: false, error: "Authentication failed" }, 500);
+    return c.json({ success: false, error: "Authentication failed" }, 500);
   }
 });
 
