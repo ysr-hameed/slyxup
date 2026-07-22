@@ -1,0 +1,30 @@
+{
+  "name": "slyxup",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:auth": "pnpm --filter @slyxup/auth dev",
+    "dev:billing": "pnpm --filter @slyxup/billing dev",
+    "dev:email": "pnpm --filter @slyxup/email dev",
+    "dev:analytics": "pnpm --filter @slyxup/analytics dev",
+    "dev:storage": "pnpm --filter @slyxup/storage dev",
+    "dev:admin": "pnpm --filter @slyxup/admin dev",
+    "dev:admin-web": "pnpm --filter @slyxup/admin-web dev",
+    "deploy:auth": "pnpm --filter @slyxup/auth deploy",
+    "deploy:billing": "pnpm --filter @slyxup/billing deploy",
+    "deploy:email": "pnpm --filter @slyxup/email deploy",
+    "deploy:analytics": "pnpm --filter @slyxup/analytics deploy",
+    "deploy:storage": "pnpm --filter @slyxup/storage deploy",
+    "deploy:admin": "pnpm --filter @slyxup/admin deploy",
+    "db:generate": "drizzle-kit generate --config=packages/database/drizzle.config.ts",
+    "db:migrate:auth": "wrangler d1 migrations apply slyxup-auth --local",
+    "db:migrate:billing": "wrangler d1 migrations apply slyxup-billing --local",
+    "db:migrate:analytics": "wrangler d1 migrations apply slyxup-analytics --local",
+    "db:migrate:admin": "wrangler d1 migrations apply slyxup-admin --local",
+    "typecheck": "pnpm -r run typecheck",
+    "start": "./start.sh"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

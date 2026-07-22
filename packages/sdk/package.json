@@ -1,0 +1,18 @@
+{
+  "name": "@slyxup/sdk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@slyxup/auth-client": "workspace:*",
+    "@slyxup/billing-client": "workspace:*",
+    "@slyxup/email-client": "workspace:*",
+    "@slyxup/analytics-client": "workspace:*",
+    "@slyxup/storage-client": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
