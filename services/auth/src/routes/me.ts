@@ -17,7 +17,7 @@ route.get("/me", async (c) => {
 
   const db = createAuthDb(c.env.DB);
   const user = await db
-    .select({ id: authSchema.users.id, email: authSchema.users.email, name: authSchema.users.name })
+    .select({ id: authSchema.users.id, email: authSchema.users.email, name: authSchema.users.name, platform: authSchema.users.platform })
     .from(authSchema.users)
     .where(eq(authSchema.users.id, payload.sub))
     .get();
@@ -25,7 +25,7 @@ route.get("/me", async (c) => {
   if (!user)
     return c.json<ApiResponse>({ success: false, error: "User not found" }, 404);
 
-  return c.json<ApiResponse<{ id: string; email: string; name: string | null }>>({
+  return c.json<ApiResponse<{ id: string; email: string; name: string | null; platform: string }>>({
     success: true,
     data: user,
   });

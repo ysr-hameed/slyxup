@@ -13,6 +13,7 @@ route.get("/google/login", (c) => {
     return c.json<ApiResponse>({ success: false, error: "Google login not configured" }, 500);
   }
 
+  const platform = c.req.query("platform") || "default";
   const redirectUri = `${new URL(c.req.url).origin}/api/auth/google/callback`;
   const url =
     "https://accounts.google.com/o/oauth2/v2/auth?" +
@@ -22,6 +23,7 @@ route.get("/google/login", (c) => {
       response_type: "code",
       scope: "openid email profile",
       access_type: "offline",
+      state: JSON.stringify({ platform }),
     });
 
   return c.json<ApiResponse<{ url: string }>>({ success: true, data: { url } });
@@ -102,12 +104,14 @@ route.get("/google/callback", async (c) => {
         .run();
     } else {
       const newId = generateId();
+      const googlePlatform = new URL(c.req.url).searchParams.get("platform") || "default";
       await db
         .insert(authSchema.users)
         .values({
           id: newId,
           email: googleUser.email,
           name: googleUser.name,
+          platform: googlePlatform,
           googleId: googleUser.id,
           avatarUrl: googleUser.picture,
         })
@@ -134,7 +138,7 @@ route.get("/google/callback", async (c) => {
       .run();
 
     const jwt = await signToken(
-      { sub: user.id, email: user.email },
+      { sub: user.id, email: user.email, platform: user.platform },
       c.env.JWT_SECRET,
       86400,
     );

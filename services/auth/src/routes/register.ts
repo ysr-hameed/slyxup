@@ -15,7 +15,7 @@ import { sendEmail, welcomeEmail } from "@slyxup/shared-email";
 const route = new Hono<{ Bindings: AuthEnv }>();
 
 route.post("/register", async (c) => {
-  let body: { email?: string; password?: string; name?: string };
+  let body: { email?: string; password?: string; name?: string; platform?: string };
   try {
     body = await c.req.json();
   } catch {
@@ -23,6 +23,7 @@ route.post("/register", async (c) => {
   }
 
   const { email, password, name } = body;
+  const platform = body.platform || "default";
 
   if (!email || !password)
     return c.json<ApiResponse>({ success: false, error: "Email and password are required" }, 400);
@@ -53,10 +54,11 @@ route.post("/register", async (c) => {
     id,
     email,
     name: name ?? null,
+    platform,
     passwordHash,
   }).run();
 
-  logger.info("user_registered", { userId: id, email });
+  logger.info("user_registered", { userId: id, email, platform });
 
   if (c.env.BREVO_API_KEY) {
     c.executionCtx.waitUntil(

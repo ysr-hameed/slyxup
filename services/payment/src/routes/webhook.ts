@@ -28,12 +28,14 @@ route.post("/webhook", async (c) => {
   switch (event.eventType) {
     case "transaction.completed": {
       const userId = data.custom_data?.userId as string | undefined;
+      const platform = (data.custom_data?.platform as string) || "default";
       if (!userId) break;
 
       await db.insert(paymentSchema.subscriptions).values({
         id: generateId(),
         userId,
         planId: data.items?.[0]?.price?.id ?? "unknown",
+        platform,
         status: "active",
         currentPeriodStart: new Date().toISOString(),
         currentPeriodEnd: new Date(Date.now() + 30 * 86400000).toISOString(),

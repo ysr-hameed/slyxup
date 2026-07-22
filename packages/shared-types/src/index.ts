@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  platform: string;
   password_hash: string | null;
   google_id: string | null;
   github_id: string | null;
@@ -22,6 +23,7 @@ export interface Subscription {
   id: string;
   user_id: string;
   plan_id: string;
+  platform: string;
   status: "active" | "canceled" | "past_due" | "incomplete" | "trialing";
   current_period_start: string;
   current_period_end: string;
@@ -35,6 +37,7 @@ export interface Plan {
   id: string;
   name: string;
   description: string | null;
+  platform: string;
   amount: number;
   currency: string;
   interval: "month" | "year";
@@ -46,6 +49,7 @@ export interface Invoice {
   id: string;
   subscription_id: string;
   user_id: string;
+  platform: string;
   amount: number;
   currency: string;
   status: "paid" | "unpaid" | "past_due";
@@ -62,6 +66,7 @@ export interface ApiResponse<T = unknown> {
 export interface JwtPayload {
   sub: string;
   email: string;
+  platform: string;
   exp: number;
   iat: number;
 }

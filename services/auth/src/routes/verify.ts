@@ -13,9 +13,9 @@ route.get("/verify", async (c) => {
   if (!payload)
     return c.json<ApiResponse>({ success: false, error: "Invalid or expired token" }, 401);
 
-  return c.json<ApiResponse<{ userId: string; email: string }>>({
+  return c.json<ApiResponse<{ userId: string; email: string; platform: string }>>({
     success: true,
-    data: { userId: payload.sub, email: payload.email },
+    data: { userId: payload.sub, email: payload.email, platform: payload.platform },
   });
 });
 

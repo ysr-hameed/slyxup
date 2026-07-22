@@ -5,7 +5,7 @@ import { getEnv } from "../services/paddle";
 const route = new Hono<{ Bindings: PaymentEnv }>();
 
 route.post("/checkout", async (c) => {
-  let body: { priceId?: string; userId?: string; returnUrl?: string };
+  let body: { priceId?: string; userId?: string; platform?: string; returnUrl?: string };
   try {
     body = await c.req.json();
   } catch {
@@ -13,6 +13,7 @@ route.post("/checkout", async (c) => {
   }
 
   const { priceId, userId, returnUrl } = body;
+  const platform = body.platform || "default";
 
   if (!priceId || !userId) {
     return c.json<ApiResponse>({ success: false, error: "priceId and userId are required" }, 400);
@@ -22,7 +23,7 @@ route.post("/checkout", async (c) => {
     const { client } = getEnv(c);
     const transaction = await client.transactions.create({
       items: [{ priceId, quantity: 1 }],
-      customData: { userId },
+      customData: { userId, platform },
       ...(returnUrl ? { returnUrl } : {}),
     });
 

@@ -6,6 +6,7 @@ export const users = sqliteTable(
     id: text("id").primaryKey(),
     email: text("email").notNull().unique(),
     name: text("name"),
+    platform: text("platform").notNull().default("default"),
     passwordHash: text("password_hash"),
     googleId: text("google_id"),
     githubId: text("github_id"),
@@ -15,6 +16,7 @@ export const users = sqliteTable(
   },
   (t) => ({
     emailIdx: index("idx_users_email").on(t.email),
+    platformIdx: index("idx_users_platform").on(t.platform),
     googleIdIdx: index("idx_users_google_id").on(t.googleId),
     githubIdIdx: index("idx_users_github_id").on(t.githubId),
   }),

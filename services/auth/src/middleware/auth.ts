@@ -16,5 +16,6 @@ export async function authMiddleware(
   }
   (c as any).set("userId", payload.sub);
   (c as any).set("userEmail", payload.email);
+  (c as any).set("platform", payload.platform);
   await next();
 }

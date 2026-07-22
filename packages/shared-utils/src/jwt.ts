@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 
 export async function signToken(
-  payload: { sub: string; email: string },
+  payload: { sub: string; email: string; platform?: string },
   secret: string,
   expiresIn: number = 86400,
 ): Promise<string> {
@@ -16,11 +16,11 @@ export async function signToken(
 export async function verifyToken(
   token: string,
   secret: string,
-): Promise<{ sub: string; email: string } | null> {
+): Promise<{ sub: string; email: string; platform: string } | null> {
   try {
     const key = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, key);
-    return { sub: payload.sub as string, email: payload.email as string };
+    return { sub: payload.sub as string, email: payload.email as string, platform: (payload.platform as string) || "default" };
   } catch {
     return null;
   }

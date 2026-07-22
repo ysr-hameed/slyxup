@@ -40,10 +40,11 @@ route.post("/auth", async (c) => {
   const testPassword = "TestPass123!";
   const results: Array<{ test_name: string; passed: boolean; response_status: number | null; response_body: string | null; error: string | null }> = [];
 
+  const testPlatform = "test-platform";
   const tests: TestCase[] = [
-    { name: "register", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword }, expectStatus: 201, expectSuccess: true },
-    { name: "register_duplicate", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword }, expectStatus: 409, expectSuccess: false },
-    { name: "login", endpoint: `${base}/login`, method: "POST", body: { email: testEmail, password: testPassword }, expectStatus: 200, expectSuccess: true },
+    { name: "register", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 201, expectSuccess: true },
+    { name: "register_duplicate", endpoint: `${base}/register`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 409, expectSuccess: false },
+    { name: "login", endpoint: `${base}/login`, method: "POST", body: { email: testEmail, password: testPassword, platform: testPlatform }, expectStatus: 200, expectSuccess: true },
   ];
 
   let jwt = "";
@@ -105,7 +106,7 @@ route.post("/payment", async (c) => {
   const tests: TestCase[] = [
     { name: "checkout_missing_fields", endpoint: `${base}/checkout`, method: "POST", body: {}, expectStatus: 400, expectSuccess: false },
     { name: "subscription_missing_userId", endpoint: `${base}/subscription`, method: "GET", expectStatus: 400, expectSuccess: false },
-    { name: "subscription_valid", endpoint: `${base}/subscription?userId=nonexistent`, method: "GET", expectStatus: 200, expectSuccess: true },
+    { name: "subscription_valid", endpoint: `${base}/subscription?userId=nonexistent&platform=test-platform`, method: "GET", expectStatus: 200, expectSuccess: true },
     { name: "portal_missing_customerId", endpoint: `${base}/portal`, method: "POST", body: {}, expectStatus: 400, expectSuccess: false },
     { name: "webhook_missing_signature", endpoint: `${base}/webhook`, method: "POST", body: { event_type: "transaction.completed" }, expectStatus: 400, expectSuccess: false },
   ];

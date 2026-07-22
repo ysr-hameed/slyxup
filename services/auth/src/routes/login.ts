@@ -13,14 +13,14 @@ import { logger } from "@slyxup/shared-logger";
 const route = new Hono<{ Bindings: AuthEnv }>();
 
 route.post("/login", async (c) => {
-  let body: { email?: string; password?: string };
+  let body: { email?: string; password?: string; platform?: string };
   try {
     body = await c.req.json();
   } catch {
     return c.json<ApiResponse>({ success: false, error: "Invalid JSON body" }, 400);
   }
 
-  const { email, password } = body;
+  const { email, password, platform } = body;
   if (!email || !password)
     return c.json<ApiResponse>({ success: false, error: "Email and password are required" }, 400);
 
@@ -32,6 +32,9 @@ route.post("/login", async (c) => {
     .get();
 
   if (!user || !user.passwordHash || !(await verifyPassword(password, user.passwordHash)))
+    return c.json<ApiResponse>({ success: false, error: "Invalid email or password" }, 401);
+
+  if (platform && user.platform !== platform)
     return c.json<ApiResponse>({ success: false, error: "Invalid email or password" }, 401);
 
   const sessionId = generateId();
@@ -46,23 +49,23 @@ route.post("/login", async (c) => {
   }).run();
 
   const jwt = await signToken(
-    { sub: user.id, email: user.email },
+    { sub: user.id, email: user.email, platform: user.platform },
     c.env.JWT_SECRET,
     86400,
   );
 
-  logger.info("user_login", { userId: user.id, email: user.email });
+  logger.info("user_login", { userId: user.id, email: user.email, platform: user.platform });
 
   return c.json<ApiResponse<{
     token: string;
     jwt: string;
-    user: { id: string; email: string; name: string | null };
+    user: { id: string; email: string; name: string | null; platform: string };
   }>>({
     success: true,
     data: {
       token,
       jwt,
-      user: { id: user.id, email: user.email, name: user.name },
+      user: { id: user.id, email: user.email, name: user.name, platform: user.platform },
     },
   });
 });

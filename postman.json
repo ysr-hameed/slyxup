@@ -28,7 +28,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test1234!\",\n  \"name\": \"Test User\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test1234!\",\n  \"name\": \"Test User\",\n  \"platform\": \"default\"\n}" },
             "url": { "raw": "{{auth_url}}/api/auth/register", "host": ["{{auth_url}}"], "path": ["api", "auth", "register"] }
           }
         },
@@ -44,7 +44,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test1234!\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test1234!\",\n  \"platform\": \"default\"\n}" },
             "url": { "raw": "{{auth_url}}/api/auth/login", "host": ["{{auth_url}}"], "path": ["api", "auth", "login"] }
           }
         },
