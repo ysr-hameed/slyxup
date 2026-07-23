@@ -11,7 +11,8 @@
     "@slyxup/email-client": "workspace:*",
     "@slyxup/analytics-client": "workspace:*",
     "@slyxup/storage-client": "workspace:*",
-    "@slyxup/admin-client": "workspace:*"
+    "@slyxup/admin-client": "workspace:*",
+    "@slyxup/notification-client": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

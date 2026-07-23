@@ -7,7 +7,7 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "slyxup-admin",
-    "database_id": "",
+    "database_id": "local-dev-0000-0000-000000000000",
     "migrations_dir": "migrations"
   }],
   "routes": [{ "pattern": "admin.slyxup.in", "custom_domain": true }],

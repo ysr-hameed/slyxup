@@ -1,15 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "notification",
+  "name": "url-shortener-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [{
     "binding": "DB",
-    "database_name": "slyxup-notification",
+    "database_name": "slyxup-url-shortener",
     "database_id": "local-dev-0000-0000-000000000000",
     "migrations_dir": "migrations"
   }],
-  "routes": [{ "pattern": "notification.slyxup.in", "custom_domain": true }],
   "vars": { "ENVIRONMENT": "development" }
 }

@@ -4,6 +4,7 @@ import { createEmailClient, type EmailClient } from "@slyxup/email-client";
 import { createAnalyticsClient, type AnalyticsClient } from "@slyxup/analytics-client";
 import { createStorageClient, type StorageClient } from "@slyxup/storage-client";
 import { createAdminClient, type AdminClient } from "@slyxup/admin-client";
+import { createNotificationClient, type NotificationClient } from "@slyxup/notification-client";
 
 export interface SlyxupClient {
   auth: AuthClient;
@@ -12,6 +13,7 @@ export interface SlyxupClient {
   analytics: AnalyticsClient;
   storage: StorageClient;
   admin: AdminClient;
+  notification: NotificationClient;
 }
 
 export interface SlyxupClientConfig {
@@ -23,6 +25,7 @@ export interface SlyxupClientConfig {
   analyticsBaseUrl?: string;
   storageBaseUrl?: string;
   adminBaseUrl?: string;
+  notificationBaseUrl?: string;
 }
 
 function baseUrl(config: SlyxupClientConfig, key: keyof SlyxupClientConfig, fallback: string): string {
@@ -37,6 +40,7 @@ export function createSlyxupClient(config: SlyxupClientConfig): SlyxupClient {
     analytics: createAnalyticsClient({ baseUrl: baseUrl(config, "analyticsBaseUrl", "https://analytics.slyxup.in"), apiKey: config.apiKey }),
     storage: createStorageClient({ baseUrl: baseUrl(config, "storageBaseUrl", "https://storage.slyxup.in"), apiKey: config.apiKey }),
     admin: createAdminClient({ baseUrl: baseUrl(config, "adminBaseUrl", "https://admin.slyxup.in"), apiKey: config.apiKey }),
+    notification: createNotificationClient({ baseUrl: baseUrl(config, "notificationBaseUrl", "https://notification.slyxup.in"), apiKey: config.apiKey }),
   };
 }
 
@@ -46,3 +50,4 @@ export { createEmailClient } from "@slyxup/email-client";
 export { createAnalyticsClient } from "@slyxup/analytics-client";
 export { createStorageClient } from "@slyxup/storage-client";
 export { createAdminClient } from "@slyxup/admin-client";
+export { createNotificationClient } from "@slyxup/notification-client";

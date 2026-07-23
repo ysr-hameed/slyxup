@@ -44,7 +44,7 @@ export function createBillingClient(config: BillingClientConfig): BillingClient 
     async listPlans(platform) {
       const params = platform ? `?platform=${platform}` : "";
       const res = await fetch(`${config.baseUrl}/api/billing/plans${params}`, { headers });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data as Plan[];
     },
@@ -53,14 +53,14 @@ export function createBillingClient(config: BillingClientConfig): BillingClient 
       const res = await fetch(`${config.baseUrl}/api/billing/create-checkout`, {
         method: "POST", headers, body: JSON.stringify(data),
       });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data;
     },
 
     async getSubscription(userId: string) {
       const res = await fetch(`${config.baseUrl}/api/billing/subscription?user_id=${userId}`, { headers });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data as Subscription;
     },

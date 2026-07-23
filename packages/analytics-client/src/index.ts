@@ -27,7 +27,7 @@ export function createAnalyticsClient(config: AnalyticsClientConfig): AnalyticsC
       const res = await fetch(`${config.baseUrl}/api/analytics/event`, {
         method: "POST", headers, body: JSON.stringify(data),
       });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
     },
 
@@ -35,13 +35,13 @@ export function createAnalyticsClient(config: AnalyticsClientConfig): AnalyticsC
       const res = await fetch(`${config.baseUrl}/api/analytics/pageview`, {
         method: "POST", headers, body: JSON.stringify(data),
       });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
     },
 
     async getSummary() {
       const res = await fetch(`${config.baseUrl}/api/analytics/summary`, { headers });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data;
     },

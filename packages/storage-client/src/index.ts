@@ -34,7 +34,7 @@ export function createStorageClient(config: StorageClientConfig): StorageClient 
       const res = await fetch(`${config.baseUrl}/api/storage/upload`, {
         method: "POST", headers, body: form,
       });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data as UploadResult;
     },
@@ -46,7 +46,7 @@ export function createStorageClient(config: StorageClientConfig): StorageClient 
     async list(prefix) {
       const params = prefix ? `?prefix=${prefix}` : "";
       const res = await fetch(`${config.baseUrl}/api/storage/list${params}`, { headers });
-      const json = await res.json();
+      const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data as FileItem[];
     },

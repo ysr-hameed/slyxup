@@ -8,7 +8,7 @@
     {
       "binding": "DB",
       "database_name": "slyxup-auth",
-      "database_id": "",
+      "database_id": "local-dev-0000-0000-000000000000",
       "migrations_dir": "migrations"
     }
   ],
