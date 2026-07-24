@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "auth",
+  "name": "slyxup-auth",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -8,14 +8,14 @@
     {
       "binding": "DB",
       "database_name": "slyxup-auth",
-      "database_id": "local-dev-0000-0000-000000000000",
+      "database_id": "65fcc877-e0b6-4198-aff4-f0d1dff72d35",
       "migrations_dir": "migrations"
     }
   ],
   "routes": [
-    { "pattern": "auth.slyxup.in", "custom_domain": true }
+    { "pattern": "auth.slyxup.online", "custom_domain": true }
   ],
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "production"
   }
 }

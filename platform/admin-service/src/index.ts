@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import type { AdminEnv } from "@slyxup/shared";
-import { setupOpenApi } from "@slyxup/shared";
+import { setupOpenApi, corsOrigin } from "@slyxup/shared";
 import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import adminUsers from "./routes/users";
 import audit from "./routes/audit";
@@ -11,7 +11,7 @@ import audit from "./routes/audit";
 const app = new OpenAPIHono<{ Bindings: AdminEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Admin-Key"] }));
+app.use("*", cors({ origin: corsOrigin, allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Admin-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

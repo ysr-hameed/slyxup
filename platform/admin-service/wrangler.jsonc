@@ -1,15 +1,15 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "admin",
+  "name": "slyxup-admin",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [{
     "binding": "DB",
     "database_name": "slyxup-admin",
-    "database_id": "local-dev-0000-0000-000000000000",
+    "database_id": "f29011b5-3f99-4c44-9d1f-e7cc7aa07f46",
     "migrations_dir": "migrations"
   }],
-  "routes": [{ "pattern": "admin.slyxup.in", "custom_domain": true }],
-  "vars": { "ENVIRONMENT": "development" }
+  "routes": [{ "pattern": "admin.slyxup.online", "custom_domain": true }],
+  "vars": { "ENVIRONMENT": "production" }
 }

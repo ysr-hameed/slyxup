@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import type { BillingEnv } from "@slyxup/shared";
-import { setupOpenApi } from "@slyxup/shared";
+import { setupOpenApi, corsOrigin } from "@slyxup/shared";
 import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import plans from "./routes/plans";
 import checkout from "./routes/checkout";
@@ -14,7 +14,7 @@ import webhook from "./routes/webhook";
 const app = new OpenAPIHono<{ Bindings: BillingEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-API-Key"] }));
+app.use("*", cors({ origin: corsOrigin, allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-API-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

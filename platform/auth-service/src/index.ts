@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import type { AuthEnv } from "@slyxup/shared";
-import { setupOpenApi } from "@slyxup/shared";
+import { setupOpenApi, corsOrigin } from "@slyxup/shared";
 import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import register from "./routes/register";
 import login from "./routes/login";
@@ -15,7 +15,7 @@ import google from "./routes/google";
 const app = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-Admin-Key"] }));
+app.use("*", cors({ origin: corsOrigin, allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-Admin-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

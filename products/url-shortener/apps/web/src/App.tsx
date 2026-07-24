@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { createSlyxupClient } from "@slyxup/sdk";
 
 const api = createSlyxupClient({
-  authBaseUrl: "http://localhost:8000",
-  billingBaseUrl: "http://localhost:8001",
-  emailBaseUrl: "http://localhost:8002",
-  analyticsBaseUrl: "http://localhost:8003",
-  storageBaseUrl: "http://localhost:8004",
+  authBaseUrl: "https://auth.slyxup.online",
+  billingBaseUrl: "https://billing.slyxup.online",
+  emailBaseUrl: "https://email.slyxup.online",
+  analyticsBaseUrl: "https://analytics.slyxup.online",
+  storageBaseUrl: "https://storage.slyxup.online",
 });
 
 type UrlEntry = { id: string; slug: string; originalUrl: string; clicks: number; createdAt: string };
@@ -117,7 +117,7 @@ function UrlDashboard({ jwt, onLogout }: { jwt: string; onLogout: () => void }) 
   }, [jwt]);
 
   const fetchUrls = useCallback(async () => {
-    const res = await fetch("http://localhost:9000/api/url", { headers: { Authorization: `Bearer ${jwt}` } });
+    const res = await fetch("https://api-url.slyxup.online/api/url", { headers: { Authorization: `Bearer ${jwt}` } });
     const json = await res.json();
     if (json.success) setUrls(json.data);
   }, [jwt]);
@@ -127,7 +127,7 @@ function UrlDashboard({ jwt, onLogout }: { jwt: string; onLogout: () => void }) 
   const createUrl = async () => {
     setError("");
     setShortUrl("");
-    const res = await fetch("http://localhost:9000/api/url", {
+    const res = await fetch("https://api-url.slyxup.online/api/url", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
       body: JSON.stringify({ url: newUrl }),
@@ -193,7 +193,7 @@ function UrlDashboard({ jwt, onLogout }: { jwt: string; onLogout: () => void }) 
             <div key={u.id} className="flex items-center justify-between p-3 bg-zinc-900 rounded-lg">
               <div className="flex-1 min-w-0">
                 <a
-                  href={`http://localhost:9000/${u.slug}`}
+                  href={`https://api-url.slyxup.online/${u.slug}`}
                   className="text-blue-400 underline text-sm hover:text-blue-300"
                   target="_blank"
                   rel="noreferrer"
@@ -206,7 +206,7 @@ function UrlDashboard({ jwt, onLogout }: { jwt: string; onLogout: () => void }) 
               <button
                 className="text-red-400 hover:text-red-300 text-sm ml-4 transition-colors"
                 onClick={() => {
-                  fetch(`http://localhost:9000/api/url/${u.id}`, {
+                  fetch(`https://api-url.slyxup.online/api/url/${u.id}`, {
                     method: "DELETE",
                     headers: { Authorization: `Bearer ${jwt}` },
                   }).then(fetchUrls);

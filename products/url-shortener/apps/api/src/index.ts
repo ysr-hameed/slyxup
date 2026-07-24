@@ -21,7 +21,8 @@ type Env = {
 const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", logger());
-app.use("*", cors({ origin: "*" }));
+import { corsOrigin } from "@slyxup/shared";
+app.use("*", cors({ origin: corsOrigin }));
 app.onError((err, c) => {
   console.error(err.message);
   return c.json({ success: false, error: "Internal server error" }, 500);
@@ -85,7 +86,8 @@ app.post("/api/url", async (c) => {
 
   client.analytics.trackEvent({ name: "url_created", platform: "url-shortener", user_id: user.id, properties: { slug } }).catch(() => {});
 
-  return c.json({ success: true, data: { id, slug, shortUrl: `http://localhost:9000/${slug}`, originalUrl, plan } });
+  const baseUrl = `${c.req.header("X-Forwarded-Proto") || "https"}://${c.req.header("Host") || "url.slyxup.online"}`;
+  return c.json({ success: true, data: { id, slug, shortUrl: `${baseUrl}/${slug}`, originalUrl, plan } });
 });
 
 app.get("/api/url", async (c) => {

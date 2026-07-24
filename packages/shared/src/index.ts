@@ -4,3 +4,4 @@ export * from "./crypto";
 export * from "./jwt";
 export * from "./openapi";
 export * from "./middleware";
+export * from "./cors";

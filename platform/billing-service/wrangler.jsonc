@@ -1,15 +1,15 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "billing",
+  "name": "slyxup-billing",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [{
     "binding": "DB",
     "database_name": "slyxup-billing",
-    "database_id": "local-dev-0000-0000-000000000000",
+    "database_id": "1c93dbc6-7939-4379-9faa-0372b3fbb2df",
     "migrations_dir": "migrations"
   }],
-  "routes": [{ "pattern": "billing.slyxup.in", "custom_domain": true }],
-  "vars": { "ENVIRONMENT": "development" }
+  "routes": [{ "pattern": "billing.slyxup.online", "custom_domain": true }],
+  "vars": { "ENVIRONMENT": "production" }
 }
