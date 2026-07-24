@@ -151,6 +151,7 @@ export interface BillingEnv {
   DB: D1Database;
   PADDLE_API_KEY: string;
   PADDLE_WEBHOOK_SECRET: string;
+  API_KEY: string;
   ENVIRONMENT: string;
 }
 
@@ -158,22 +159,26 @@ export interface EmailEnv {
   BREVO_API_KEY: string;
   FROM_EMAIL: string;
   SUPPORT_EMAIL: string;
+  API_KEY: string;
   ENVIRONMENT: string;
 }
 
 export interface AnalyticsEnv {
   DB: D1Database;
+  API_KEY: string;
   ENVIRONMENT: string;
 }
 
 export interface StorageEnv {
   R2: R2Bucket;
   R2_PUBLIC_URL: string;
+  API_KEY: string;
   ENVIRONMENT: string;
 }
 
 export interface NotificationEnv {
   DB: D1Database;
+  API_KEY: string;
   ENVIRONMENT: string;
 }
 

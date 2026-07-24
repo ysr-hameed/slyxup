@@ -1,11 +1,14 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { NotificationEnv } from "@slyxup/shared";
-import { apiResponseSchema, generateId } from "@slyxup/shared";
+import { apiResponseSchema, generateId, requireApiKey } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: NotificationEnv }>();
+
+route.use("/send", requireApiKey);
+route.use("/logs", requireApiKey);
 
 const sendDef = createRoute({
   method: "post",

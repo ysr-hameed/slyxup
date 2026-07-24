@@ -1,3 +1,4 @@
 PADDLE_API_KEY=your-paddle-api-key
 PADDLE_WEBHOOK_SECRET=your-webhook-secret
+API_KEY=dev-api-key
 ENVIRONMENT=development

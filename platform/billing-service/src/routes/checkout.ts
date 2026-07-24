@@ -1,12 +1,14 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { BillingEnv } from "@slyxup/shared";
-import { createCheckoutSchema, apiResponseSchema } from "@slyxup/shared";
+import { createCheckoutSchema, apiResponseSchema, requireApiKey } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: BillingEnv }>();
+
+route.use("/create-checkout", requireApiKey);
 
 const routeDef = createRoute({
   method: "post",

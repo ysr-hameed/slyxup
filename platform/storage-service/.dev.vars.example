@@ -1,2 +1,3 @@
+API_KEY=dev-api-key
 ENVIRONMENT=development
 R2_PUBLIC_URL=http://localhost:8004

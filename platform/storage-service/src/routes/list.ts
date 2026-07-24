@@ -1,8 +1,10 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { StorageEnv } from "@slyxup/shared";
-import { apiResponseSchema } from "@slyxup/shared";
+import { apiResponseSchema, requireApiKey } from "@slyxup/shared";
 
 const route = new OpenAPIHono<{ Bindings: StorageEnv }>();
+
+route.use("/list", requireApiKey);
 
 const routeDef = createRoute({
   method: "get",

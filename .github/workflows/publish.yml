@@ -1,0 +1,56 @@
+name: Publish Packages to npm
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/*/package.json"
+      - "packages/*/src/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      - run: pnpm install
+
+      - name: Check changed packages
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- packages/ | grep -oP 'packages/\K[^/]+' | sort -u | tr '\n' ' ' || true)
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+          echo "Packages changed: $CHANGED"
+
+      - name: Publish each changed package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for PKG in ${{ steps.changed.outputs.changed }}; do
+            DIR="packages/$PKG"
+            if [ ! -f "$DIR/package.json" ]; then continue; fi
+            NAME=$(node -e "console.log(require('./$DIR/package.json').name)")
+            VERSION=$(node -e "console.log(require('./$DIR/package.json').version)")
+            echo "Checking $NAME@$VERSION ..."
+            npm view "$NAME@$VERSION" 2>/dev/null && echo "  already published" || {
+              echo "  publishing $NAME@$VERSION ..."
+              cd "$DIR"
+              npm publish --provenance --access public
+              cd ../..
+            }
+          done

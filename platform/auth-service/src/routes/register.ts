@@ -1,6 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { AuthEnv } from "@slyxup/shared";
-import { registerSchema, apiResponseSchema, hashPassword, generateId } from "@slyxup/shared";
+import { registerSchema, apiResponseSchema, hashPassword, generateId, generateToken } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
@@ -38,13 +38,22 @@ route.openapi(routeDef, async (c) => {
 
   const passwordHash = await hashPassword(password);
   const id = generateId();
+  const verificationToken = generateToken();
   const now = new Date().toISOString();
 
-  await db.insert(schema.users).values({ id, email, name: name ?? null, passwordHash, createdAt: now, updatedAt: now }).run();
+  await db.insert(schema.users).values({
+    id, email, name: name ?? null, passwordHash,
+    emailVerificationToken: verificationToken,
+    emailVerified: 0,
+    createdAt: now, updatedAt: now,
+  }).run();
 
   logger.info("user_registered", { userId: id, email });
 
-  return c.json({ success: true, data: { id, email } }, 201);
+  return c.json({
+    success: true,
+    data: { id, email, verificationToken },
+  }, 201);
 });
 
 export default route;

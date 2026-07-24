@@ -11,7 +11,7 @@ import pageViews from "./routes/pageviews";
 const app = new OpenAPIHono<{ Bindings: AnalyticsEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization"] }));
+app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-API-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

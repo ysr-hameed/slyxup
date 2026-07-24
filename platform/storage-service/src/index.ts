@@ -12,7 +12,7 @@ import list from "./routes/list";
 const app = new OpenAPIHono<{ Bindings: StorageEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization"] }));
+app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-API-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

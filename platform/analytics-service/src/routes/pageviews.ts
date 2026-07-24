@@ -1,11 +1,13 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { AnalyticsEnv } from "@slyxup/shared";
-import { apiResponseSchema, generateId } from "@slyxup/shared";
+import { apiResponseSchema, generateId, requireApiKey } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: AnalyticsEnv }>();
+
+route.use("/summary", requireApiKey);
 
 const trackDef = createRoute({
   method: "post",

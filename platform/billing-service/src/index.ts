@@ -14,7 +14,7 @@ import webhook from "./routes/webhook";
 const app = new OpenAPIHono<{ Bindings: BillingEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-Admin-Key"] }));
+app.use("*", cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-API-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {

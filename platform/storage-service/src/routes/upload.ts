@@ -1,9 +1,11 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { StorageEnv } from "@slyxup/shared";
-import { apiResponseSchema } from "@slyxup/shared";
+import { apiResponseSchema, requireApiKey } from "@slyxup/shared";
 import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: StorageEnv }>();
+
+route.use("/upload", requireApiKey);
 
 const routeDef = createRoute({
   method: "post",

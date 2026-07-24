@@ -1,11 +1,13 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { BillingEnv } from "@slyxup/shared";
-import { apiResponseSchema } from "@slyxup/shared";
+import { apiResponseSchema, requireApiKey } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 
 const route = new OpenAPIHono<{ Bindings: BillingEnv }>();
+
+route.use("/subscription", requireApiKey);
 
 const routeDef = createRoute({
   method: "get",

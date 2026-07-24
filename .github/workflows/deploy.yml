@@ -1,0 +1,196 @@
+name: Deploy Platform Services
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "platform/*/src/**"
+      - "platform/*/wrangler.jsonc"
+      - "platform/*/package.json"
+      - "products/*/apps/api/src/**"
+      - "products/*/apps/api/wrangler.jsonc"
+      - "products/*/apps/web/**"
+      - "packages/shared/src/**"
+      - "packages/logger/src/**"
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.changed.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: changed
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} 2>/dev/null || echo "")
+          SERVICES=""
+          for DIR in platform/*/; do
+            NAME=$(basename "$DIR")
+            if echo "$CHANGED" | grep -q "^platform/$NAME/"; then
+              SERVICES="$SERVICES $NAME"
+            fi
+          done
+          for DIR in products/*/; do
+            NAME=$(basename "$DIR")
+            if echo "$CHANGED" | grep -q "^products/$NAME/"; then
+              SERVICES="$SERVICES product-$NAME"
+            fi
+          done
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "Services to deploy: $SERVICES"
+
+  deploy-auth:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'auth-service')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Deploy Auth Service
+        working-directory: platform/auth-service
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_AUTH }}
+
+  deploy-billing:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'billing-service')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Deploy Billing Service
+        working-directory: platform/billing-service
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_BILLING }}
+
+  deploy-email:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'email-service')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Deploy Email Service
+        working-directory: platform/email-service
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_EMAIL }}
+
+  deploy-analytics:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'analytics-service')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Deploy Analytics Service
+        working-directory: platform/analytics-service
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_ANALYTICS }}
+
+  deploy-storage:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'storage-service')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Deploy Storage Service
+        working-directory: platform/storage-service
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_STORAGE }}
+
+  deploy-admin:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'admin-service')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Deploy Admin Service
+        working-directory: platform/admin-service
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_ADMIN }}
+
+  deploy-notification:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'notification-service')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Deploy Notification Service
+        working-directory: platform/notification-service
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_NOTIFICATION }}
+
+  deploy-url-shortener:
+    needs: detect-changes
+    if: contains(needs.detect-changes.outputs.services, 'product-url-shortener')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+
+      - name: Deploy URL Shortener API
+        working-directory: products/url-shortener/apps/api
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_URL_SHORTENER }}
+
+      - name: Build & Deploy URL Shortener Web
+        working-directory: products/url-shortener/apps/web
+        run: |
+          npx vite build
+          npx wrangler pages deploy dist
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_URL_SHORTENER }}

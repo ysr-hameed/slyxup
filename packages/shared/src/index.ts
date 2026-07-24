@@ -3,3 +3,4 @@ export * from "./validation";
 export * from "./crypto";
 export * from "./jwt";
 export * from "./openapi";
+export * from "./middleware";

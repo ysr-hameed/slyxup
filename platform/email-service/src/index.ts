@@ -3,14 +3,14 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import type { EmailEnv } from "@slyxup/shared";
-import { setupOpenApi } from "@slyxup/shared";
+import { setupOpenApi, requireApiKey } from "@slyxup/shared";
 import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import send from "./routes/send";
 
 const app = new OpenAPIHono<{ Bindings: EmailEnv }>();
 
 app.use("*", honoLogger());
-app.use("*", cors({ origin: "*", allowMethods: ["POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization"] }));
+app.use("*", cors({ origin: "*", allowMethods: ["POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-API-Key"] }));
 app.onError(createHonoErrorHandler());
 
 app.use("*", async (c, next) => {
@@ -19,6 +19,7 @@ app.use("*", async (c, next) => {
   logger.debug("request", { method: c.req.method, path: c.req.path, status: c.res.status, ms: Date.now() - start });
 });
 
+app.use("/api/email/*", requireApiKey);
 app.route("/api/email", send);
 
 setupOpenApi(app, {

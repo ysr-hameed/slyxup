@@ -9,6 +9,8 @@ export const users = sqliteTable("users", {
   githubId: text("github_id"),
   avatarUrl: text("avatar_url"),
   blocked: integer("blocked").notNull().default(0),
+  emailVerified: integer("email_verified").notNull().default(0),
+  emailVerificationToken: text("email_verification_token"),
   deletedAt: text("deleted_at"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),

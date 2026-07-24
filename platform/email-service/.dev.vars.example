@@ -1,4 +1,5 @@
 BREVO_API_KEY=your-brevo-api-key
 FROM_EMAIL=noreply@example.com
 SUPPORT_EMAIL=support@example.com
+API_KEY=dev-api-key
 ENVIRONMENT=development

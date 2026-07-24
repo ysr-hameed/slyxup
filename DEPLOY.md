@@ -132,6 +132,7 @@ npx wrangler secret put ENVIRONMENT
 cd platform/billing-service
 npx wrangler secret put PADDLE_API_KEY
 npx wrangler secret put PADDLE_WEBHOOK_SECRET
+npx wrangler secret put API_KEY
 npx wrangler secret put ENVIRONMENT
 ```
 
@@ -141,18 +142,21 @@ cd platform/email-service
 npx wrangler secret put BREVO_API_KEY
 npx wrangler secret put FROM_EMAIL
 npx wrangler secret put SUPPORT_EMAIL
+npx wrangler secret put API_KEY
 npx wrangler secret put ENVIRONMENT
 ```
 
 ### Analytics Service (Account #4)
 ```bash
 cd platform/analytics-service
+npx wrangler secret put API_KEY
 npx wrangler secret put ENVIRONMENT
 ```
 
 ### Storage Service (Account #5)
 ```bash
 cd platform/storage-service
+npx wrangler secret put API_KEY
 npx wrangler secret put ENVIRONMENT
 npx wrangler secret put R2_PUBLIC_URL
 ```
@@ -168,6 +172,7 @@ npx wrangler secret put ENVIRONMENT
 ### Notification Service (Account #7)
 ```bash
 cd platform/notification-service
+npx wrangler secret put API_KEY
 npx wrangler secret put ENVIRONMENT
 ```
 
@@ -317,36 +322,37 @@ Or deploy to Cloudflare Pages via the dashboard.
 
 ## 10. CI/CD (GitHub Actions)
 
-No workflows exist yet. Here's a starting template for `.github/workflows/deploy.yml`:
+Workflows already configured in `.github/workflows/`:
 
-```yaml
-name: Deploy Auth Service
+### Auto-publish packages to npm (`publish.yml`)
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - "platform/auth-service/**"
-      - "packages/shared/**"
+Triggers on push to `main` when `packages/*` changes:
+- Detects which packages changed
+- Publishes each changed package to npm (skips if version already published)
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install
-      - run: npx wrangler deploy
-        working-directory: platform/auth-service
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_AUTH }}
-```
+**Required secrets:**
+- `NPM_TOKEN` — npm automation token with publish permissions
 
-Each service deploys independently, so create one workflow per service.
+### Auto-deploy services (`deploy.yml`)
+
+Triggers on push to `main` when `platform/*`, `products/*`, `packages/shared/`, or `packages/logger/` changes:
+- Detects which services changed
+- Deploys each changed service to its Cloudflare account
+
+**Required secrets (one per Cloudflare account):**
+
+| Secret | Service |
+|--------|---------|
+| `CF_API_TOKEN_AUTH` | Auth |
+| `CF_API_TOKEN_BILLING` | Billing |
+| `CF_API_TOKEN_EMAIL` | Email |
+| `CF_API_TOKEN_ANALYTICS` | Analytics |
+| `CF_API_TOKEN_STORAGE` | Storage |
+| `CF_API_TOKEN_ADMIN` | Admin |
+| `CF_API_TOKEN_NOTIFICATION` | Notification |
+| `CF_API_TOKEN_URL_SHORTENER` | URL Shortener |
+
+Each API token needs `Workers` + `Pages` permissions. Create tokens at `https://dash.cloudflare.com/profile/api-tokens`.
 
 ---
 
@@ -375,7 +381,16 @@ curl -X POST https://analytics.slyxup.in/api/analytics/event \
 
 # Upload a file
 curl -X POST https://storage.slyxup.in/api/storage/upload \
+  -H "X-API-Key: your-api-key" \
   -F "file=@test.txt"
+
+# Verify email (token returned at registration)
+curl "https://auth.slyxup.in/api/auth/verify?token=<verification-token>"
+
+# Protected endpoints require API key or admin key:
+curl -H "X-API-Key: your-api-key" https://analytics.slyxup.in/api/analytics/summary
+curl -H "X-API-Key: your-api-key" https://billing.slyxup.in/api/billing/subscription?user_id=<id>
+curl -H "X-Admin-Key: your-admin-key" https://admin.slyxup.in/api/admin/users
 ```
 
 ---
@@ -390,3 +405,7 @@ curl -X POST https://storage.slyxup.in/api/storage/upload \
 - [ ] SSL auto-provisioned by Cloudflare
 - [ ] Monitoring + alerts configured per account
 - [ ] Rate limiting / DDoS protection (Cloudflare WAF)
+- [ ] `API_KEY` set via `wrangler secret put` for billing, email, analytics, storage, notification
+- [ ] `API_KEY` value matches between services that call each other (auth → email for verification, etc.)
+- [ ] Google OAuth callback URL updated to production domain
+- [ ] Paddle webhook URL updated to production `https://billing.slyxup.in/api/billing/webhook`

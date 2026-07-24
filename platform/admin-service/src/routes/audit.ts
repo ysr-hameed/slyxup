@@ -1,11 +1,13 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { AdminEnv } from "@slyxup/shared";
-import { apiResponseSchema, generateId } from "@slyxup/shared";
+import { apiResponseSchema, generateId, requireAdminKey } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: AdminEnv }>();
+
+route.use("*", requireAdminKey);
 
 const listDef = createRoute({
   method: "get",

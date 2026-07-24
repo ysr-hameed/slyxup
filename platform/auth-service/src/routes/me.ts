@@ -38,6 +38,8 @@ route.openapi(routeDef, async (c) => {
   const db = createDb(c.env.DB);
   const user = await db.select().from(schema.users).where(eq(schema.users.id, payload.sub)).get();
   if (!user) return c.json({ success: false, error: "User not found" }, 404);
+  if (user.blocked) return c.json({ success: false, error: "Account is blocked" }, 403);
+  if (user.deletedAt) return c.json({ success: false, error: "Account has been deleted" }, 403);
 
   return c.json({
     success: true,

@@ -1,20 +1,23 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { AuthEnv } from "@slyxup/shared";
 import { apiResponseSchema, generateToken, generateId, signToken } from "@slyxup/shared";
+import { logger } from "@slyxup/logger";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq, and } from "drizzle-orm";
-import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 route.get("/google", async (c) => {
+  const state = generateToken();
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", c.env.GOOGLE_CLIENT_ID);
   url.searchParams.set("redirect_uri", c.env.GOOGLE_CALLBACK_URL);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", "openid email profile");
   url.searchParams.set("access_type", "offline");
+  url.searchParams.set("state", state);
+  c.header("Set-Cookie", `oauth_state=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=300`);
   return c.redirect(url.toString());
 });
 
@@ -31,7 +34,12 @@ const callbackDef = createRoute({
 });
 
 route.openapi(callbackDef, async (c) => {
-  const { code } = c.req.valid("query");
+  const { code, state } = c.req.valid("query");
+
+  const cookieState = c.req.header("Cookie")?.split(";").find(c => c.trim().startsWith("oauth_state="))?.split("=")[1]?.trim();
+  if (state && cookieState && state !== cookieState) {
+    return c.json({ success: false, error: "Invalid state parameter" }, 400);
+  }
 
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -53,7 +61,10 @@ route.openapi(callbackDef, async (c) => {
 
   if (!userResponse.ok) return c.json({ success: false, error: "Failed to get user info" }, 400);
 
-  const googleUser = await userResponse.json<{ id: string; email: string; name: string; picture: string }>();
+  const googleUser = await userResponse.json<{ id: string; email: string; name: string; picture: string; verified_email?: boolean }>();
+  if (googleUser.verified_email === false) {
+    return c.json({ success: false, error: "Google email not verified" }, 400);
+  }
 
   const db = createDb(c.env.DB);
   const existing = await db.select().from(schema.oauthAccounts).where(
