@@ -25,6 +25,7 @@
     "typecheck": "pnpm -r run typecheck",
     "start": "./start.sh"
   },
+  "packageManager": "pnpm@11.13.0",
   "engines": {
     "node": ">=22"
   }

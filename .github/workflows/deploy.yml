@@ -58,7 +58,7 @@ jobs:
         working-directory: platform/auth-service
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_AUTH }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
   deploy-billing:
     needs: detect-changes
@@ -76,7 +76,7 @@ jobs:
         working-directory: platform/billing-service
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_BILLING }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
   deploy-email:
     needs: detect-changes
@@ -94,7 +94,7 @@ jobs:
         working-directory: platform/email-service
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_EMAIL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
   deploy-analytics:
     needs: detect-changes
@@ -112,7 +112,7 @@ jobs:
         working-directory: platform/analytics-service
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_ANALYTICS }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
   deploy-storage:
     needs: detect-changes
@@ -130,7 +130,7 @@ jobs:
         working-directory: platform/storage-service
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_STORAGE }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
   deploy-admin:
     needs: detect-changes
@@ -148,7 +148,7 @@ jobs:
         working-directory: platform/admin-service
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_ADMIN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
   deploy-notification:
     needs: detect-changes
@@ -166,7 +166,7 @@ jobs:
         working-directory: platform/notification-service
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_NOTIFICATION }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
   deploy-url-shortener:
     needs: detect-changes
@@ -185,7 +185,7 @@ jobs:
         working-directory: products/url-shortener/apps/api
         run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_URL_SHORTENER }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
       - name: Build & Deploy URL Shortener Web
         working-directory: products/url-shortener/apps/web
@@ -193,4 +193,4 @@ jobs:
           npx vite build
           npx wrangler pages deploy dist
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN_URL_SHORTENER }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
