@@ -190,9 +190,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
       - name: Build & Deploy URL Shortener Web
-        working-directory: products/url-shortener/apps/web
+        working-directory: products/url-shortener
         run: |
-          npx vite build
-          npx wrangler pages deploy dist
+          npx vite build --config apps/web/vite.config.ts --outDir apps/web/dist
+          npx wrangler pages deploy apps/web/dist --project-name slyxup-url-shortener-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
