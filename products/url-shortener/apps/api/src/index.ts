@@ -18,10 +18,20 @@ type Env = {
   ENVIRONMENT: string;
 };
 
+const ALLOWED_ORIGINS = [
+  /^https:\/\/[a-z0-9-]+\.slyxup\.online$/,
+  /^http:\/\/localhost:\d+$/,
+];
+
+function corsOrigin(origin: string): string | null {
+  if (!origin) return null;
+  if (ALLOWED_ORIGINS.some((p) => p.test(origin))) return origin;
+  return null;
+}
+
 const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", logger());
-import { corsOrigin } from "@slyxup/shared";
 app.use("*", cors({ origin: corsOrigin }));
 app.onError((err, c) => {
   console.error(err.message);
