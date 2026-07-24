@@ -8,6 +8,8 @@ on:
       - "packages/*/src/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
+      - ".github/workflows/**"
+      - "package.json"
 
 jobs:
   publish:

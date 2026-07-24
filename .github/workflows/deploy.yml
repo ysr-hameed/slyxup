@@ -12,6 +12,8 @@ on:
       - "products/*/apps/web/**"
       - "packages/shared/src/**"
       - "packages/logger/src/**"
+      - ".github/workflows/**"
+      - "package.json"
 
 jobs:
   detect-changes:
