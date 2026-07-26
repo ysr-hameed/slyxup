@@ -52,7 +52,7 @@ jobs:
             npm view "$NAME@$VERSION" 2>/dev/null && echo "  already published" || {
               echo "  publishing $NAME@$VERSION ..."
               cd "$DIR"
-              npm publish --provenance --access public
+              pnpm publish --no-git-checks --access public
               cd ../..
             }
           done
