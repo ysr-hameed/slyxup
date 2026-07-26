@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 
 const route = new OpenAPIHono<{ Bindings: BillingEnv }>();
 
-route.use("/subscription", requireApiKey);
+
 
 const routeDef = createRoute({
   method: "get",

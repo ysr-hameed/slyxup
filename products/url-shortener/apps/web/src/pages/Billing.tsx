@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createSlyxupClient } from "@slyxup/sdk";
-import { Layout, AUTH_BASE } from "../components/Layout";
+import { Layout } from "../components/Layout";
 
 interface Plan {
   id: string; name: string; description: string | null;
@@ -11,7 +11,7 @@ interface Subscription {
   id: string; plan_id: string; status: string; current_period_end: string | null;
 }
 
-export function Billing({ jwt, user, onLogout }: { jwt: string; user: { name?: string; email: string } | null; onLogout: () => void }) {
+export function Billing({ jwt, user, onLogout }: { jwt: string; user: { id?: string; name?: string; email: string } | null; onLogout: () => void }) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,14 +19,12 @@ export function Billing({ jwt, user, onLogout }: { jwt: string; user: { name?: s
 
   useEffect(() => {
     const api = createSlyxupClient({
-      authBaseUrl: AUTH_BASE,
       billingBaseUrl: import.meta.env.DEV ? "http://localhost:8001" : "https://billing.slyxup.online",
-      apiKey: "dev-key",
     });
 
     Promise.all([
       api.billing.listPlans("url-shortener").catch(() => [] as Plan[]),
-      api.billing.getSubscription(user?.email || "").catch(() => null),
+      api.billing.getSubscription(user?.id || "").catch(() => null),
     ]).then(([plans, sub]) => {
       setPlans(plans);
       setSubscription(sub);

@@ -4,6 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
+  "account_id": "ed01399ae5f7a46697e0802e4eaef6a9",
   "d1_databases": [{
     "binding": "DB",
     "database_name": "slyxup-billing",

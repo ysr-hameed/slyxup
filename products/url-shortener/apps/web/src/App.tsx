@@ -37,7 +37,7 @@ export function App() {
   const [page, setPage] = useState<Page>(getPage);
   const [jwt, setJwt] = useState<string | null>(() => sessionStorage.getItem("jwt"));
   const [pendingEmail, setPendingEmail] = useState<string | undefined>();
-  const [user, setUser] = useState<{ name?: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; name?: string; email: string } | null>(null);
 
   useEffect(() => {
     const handler = () => setPage(getPage());
