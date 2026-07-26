@@ -11,6 +11,8 @@ import logout from "./routes/logout";
 import me from "./routes/me";
 import verify from "./routes/verify";
 import google from "./routes/google";
+import forgotPassword from "./routes/forgot-password";
+import resetPassword from "./routes/reset-password";
 
 const app = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -30,6 +32,8 @@ app.route("/api/auth", logout);
 app.route("/api/auth", me);
 app.route("/api/auth", verify);
 app.route("/api/auth", google);
+app.route("/api/auth", forgotPassword);
+app.route("/api/auth", resetPassword);
 
 setupOpenApi(app, {
   title: "Slyxup Auth API",

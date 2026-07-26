@@ -144,6 +144,8 @@ export interface AuthEnv {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   GOOGLE_CALLBACK_URL: string;
+  API_KEY: string;
+  EMAIL_SERVICE_URL: string;
   ENVIRONMENT: string;
 }
 

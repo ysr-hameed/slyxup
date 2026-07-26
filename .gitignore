@@ -6,3 +6,4 @@ dist/
 .env.local
 *.log
 .wrangler/
+package-lock.json

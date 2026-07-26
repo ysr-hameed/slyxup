@@ -31,9 +31,12 @@ export interface LoginResponse {
 
 export interface AuthClient {
   login(data: LoginRequest): Promise<LoginResponse>;
-  register(data: RegisterRequest): Promise<{ id: string; email: string }>;
+  register(data: RegisterRequest): Promise<{ id: string; email: string; verificationToken?: string }>;
   logout(): Promise<void>;
   me(token: string): Promise<AuthUser>;
+  verifyEmail(token: string): Promise<{ message: string }>;
+  forgotPassword(email: string): Promise<{ message: string }>;
+  resetPassword(token: string, password: string): Promise<{ message: string }>;
 }
 
 export function createAuthClient(config: AuthClientConfig): AuthClient {
@@ -73,6 +76,31 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data as AuthUser;
+    },
+
+    async verifyEmail(token: string) {
+      const res = await fetch(`${config.baseUrl}/api/auth/verify?token=${encodeURIComponent(token)}`, { headers: headers() });
+      const json: any = await res.json();
+      if (!json.success) throw new Error(json.error);
+      return json.data;
+    },
+
+    async forgotPassword(email: string) {
+      const res = await fetch(`${config.baseUrl}/api/auth/forgot-password`, {
+        method: "POST", headers: headers(), body: JSON.stringify({ email }),
+      });
+      const json: any = await res.json();
+      if (!json.success) throw new Error(json.error);
+      return json.data;
+    },
+
+    async resetPassword(token: string, password: string) {
+      const res = await fetch(`${config.baseUrl}/api/auth/reset-password`, {
+        method: "POST", headers: headers(), body: JSON.stringify({ token, password }),
+      });
+      const json: any = await res.json();
+      if (!json.success) throw new Error(json.error);
+      return json.data;
     },
   };
 }
