@@ -1,13 +1,7 @@
 import type { ReactNode } from "react";
+import { AUTH_BASE, API_BASE } from "../config";
 
-let API_BASE = "https://api-url.slyxup.online";
-let AUTH_BASE = "https://auth.slyxup.online";
-if (import.meta.env.DEV) {
-  API_BASE = "http://localhost:9000";
-  AUTH_BASE = "http://localhost:8000";
-}
-
-export { API_BASE, AUTH_BASE };
+export { AUTH_BASE, API_BASE };
 
 export function Layout({ children, user, onLogout }: { children: ReactNode; user?: { id?: string; name?: string; email: string } | null; onLogout?: () => void }) {
   return (

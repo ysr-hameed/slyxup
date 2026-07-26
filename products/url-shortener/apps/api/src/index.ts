@@ -112,7 +112,9 @@ app.post("/api/url", async (c) => {
     properties: JSON.stringify({ slug, custom: !!customSlug }),
   }).catch(() => {});
 
-  const baseUrl = `${c.req.header("X-Forwarded-Proto") || "https"}://${c.req.header("Host") || "api-url.slyxup.online"}`;
+  const proto = c.req.header("X-Forwarded-Proto") || "https";
+  const host = c.req.header("Host") || (c.env.ENVIRONMENT === "development" ? "localhost:9000" : "api-url.slyxup.online");
+  const baseUrl = `${proto}://${host}`;
   return c.json({
     success: true,
     data: { id, slug, shortUrl: `${baseUrl}/${slug}`, originalUrl, title: title || null, plan: plan === PRO_PLAN ? "pro" : "free", expiresAt },

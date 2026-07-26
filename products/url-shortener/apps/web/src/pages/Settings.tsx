@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createSlyxupClient } from "@slyxup/sdk";
 import { Layout } from "../components/Layout";
+import { AUTH_BASE } from "../config";
 
 interface SessionInfo {
   id: string; ip: string | null; userAgent: string | null;
@@ -8,9 +9,7 @@ interface SessionInfo {
 }
 
 export function Settings({ jwt, user, onLogout }: { jwt: string; user: { id?: string; name?: string; email: string } | null; onLogout: () => void }) {
-  const api = createSlyxupClient({
-    authBaseUrl: import.meta.env.DEV ? "http://localhost:8000" : "https://auth.slyxup.online",
-  });
+  const api = createSlyxupClient({ authBaseUrl: AUTH_BASE });
 
   const [name, setName] = useState(user?.name || "");
   const [currentPassword, setCurrentPassword] = useState("");

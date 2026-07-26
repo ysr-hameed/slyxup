@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createSlyxupClient } from "@slyxup/sdk";
 import { Layout } from "../components/Layout";
+import { BILLING_BASE } from "../config";
 
 interface Plan {
   id: string; name: string; description: string | null;
@@ -18,9 +19,7 @@ export function Billing({ jwt, user, onLogout }: { jwt: string; user: { id?: str
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const api = createSlyxupClient({
-      billingBaseUrl: import.meta.env.DEV ? "http://localhost:8001" : "https://billing.slyxup.online",
-    });
+    const api = createSlyxupClient({ billingBaseUrl: BILLING_BASE });
 
     Promise.all([
       api.billing.listPlans("url-shortener").catch(() => [] as Plan[]),
@@ -30,8 +29,6 @@ export function Billing({ jwt, user, onLogout }: { jwt: string; user: { id?: str
       setSubscription(sub);
     }).finally(() => setLoading(false));
   }, []);
-
-  const BILLING_BASE = import.meta.env.DEV ? "http://localhost:8001" : "https://billing.slyxup.online";
 
   const subscribe = async (planId: string) => {
     setError("");

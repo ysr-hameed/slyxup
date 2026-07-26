@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { createSlyxupClient } from "@slyxup/sdk";
+import { AUTH_BASE } from "../config";
 
-const api = createSlyxupClient({
-  authBaseUrl: import.meta.env.DEV ? "http://localhost:8000" : "https://auth.slyxup.online",
-});
+const api = createSlyxupClient({ authBaseUrl: AUTH_BASE });
 
 export function ForgotPassword() {
   const [email, setEmail] = useState("");

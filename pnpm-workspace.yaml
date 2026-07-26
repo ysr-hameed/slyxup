@@ -2,6 +2,7 @@ packages:
   - "packages/*"
   - "platform/*"
   - "products/*"
+  - "products/url-shortener/apps/*"
 allowBuilds:
   esbuild: true
   sharp: true
