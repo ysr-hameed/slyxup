@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@slyxup/shared": "workspace:*",
-    "@slyxup/logger": "workspace:*",
+    "@slyxup/shared": "^1.0.2",
+    "@slyxup/logger": "^1.0.2",
     "hono": "^4.7.0",
     "@hono/zod-openapi": "^0.19.0",
     "@hono/swagger-ui": "^0.5.0",

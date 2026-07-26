@@ -10,7 +10,7 @@
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@slyxup/sdk": "workspace:*"
+    "@slyxup/sdk": "^1.0.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
