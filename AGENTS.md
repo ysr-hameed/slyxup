@@ -275,3 +275,40 @@ All services that verify JWTs must share the same `JWT_SECRET`:
 
 Set `JWT_SECRET` via `wrangler secret put JWT_SECRET` in each worker that needs it.
 For local dev, add it to each service's `.dev.vars`.
+
+The deploy workflow (`deploy.yml`) automatically sets `JWT_SECRET` for the URL shortener API
+during CI (requires `JWT_SECRET` GitHub secret to be set).
+
+## Local development tips
+
+### Email/password flow locally
+Since the email service is only available in production, verification/reset links are
+logged to the server console in development mode. After registering, check the auth service
+logs for a line like:
+```json
+{"level":"info","message":"dev_verification_link","verifyLink":"http://localhost:5173/verify?token=..."}
+```
+Open that link in your browser to verify the email.
+
+For password reset, the reset link is logged similarly as `dev_reset_link`.
+
+### Missing DB tables locally
+If a service returns `D1_ERROR: no such table`, apply its migrations:
+```bash
+pnpm --filter @slyxup/<service-name> exec wrangler d1 migrations apply slyxup-<db-name> --local
+```
+For the URL shortener API (uses product-level wrangler config):
+```bash
+pnpm --filter @slyxup/url-shortener exec wrangler d1 migrations apply slyxup-url-shortener --local --config apps/api/wrangler.jsonc
+```
+
+### Checking deployment health after push
+After pushing to main, always verify:
+1. https://github.com/ysr-hameed/slyxup/actions — all jobs should pass
+2. If "Deploy Platform Services" fails on `deploy-url-shortener`, check:
+   - `CF_API_TOKEN` has **Pages:Write** permission (regenerate in Cloudflare dashboard if needed)
+   - `JWT_SECRET` is set as a GitHub secret for the CI step
+   - The Pages project `slyxup-url-shortener-web` exists (`npx wrangler pages project list`)
+3. If any platform service fails, check:
+   - Missing secrets (`wrangler secret list --name <worker-name>`)
+   - DB migrations not applied (`wrangler d1 migrations apply <db-name> --remote`)

@@ -47,6 +47,10 @@ route.openapi(routeDef, async (c) => {
     }),
   }).catch(() => {});
 
+  if (c.env.ENVIRONMENT === "development") {
+    logger.info("dev_verification_link", { verifyLink });
+  }
+
   logger.info("verification_resent", { userId: user.id, email: user.email });
 
   return c.json({ success: true, data: { message: "If an unverified account exists, a verification email has been sent." } });

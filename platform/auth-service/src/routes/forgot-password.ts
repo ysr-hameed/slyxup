@@ -50,6 +50,10 @@ route.openapi(routeDef, async (c) => {
     }),
   }).catch(() => {});
 
+  if (c.env.ENVIRONMENT === "development") {
+    logger.info("dev_reset_link", { resetLink });
+  }
+
   logger.info("password_reset_requested", { userId: user.id, email: user.email });
 
   return c.json({ success: true, data: { message: "If an account with that email exists, a reset link has been sent." } });

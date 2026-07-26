@@ -59,6 +59,10 @@ route.openapi(routeDef, async (c) => {
     }),
   }).catch(() => {});
 
+  if (c.env.ENVIRONMENT === "development") {
+    logger.info("dev_verification_link", { verifyLink });
+  }
+
   logger.info("user_registered", { userId: id, email });
 
   return c.json({
