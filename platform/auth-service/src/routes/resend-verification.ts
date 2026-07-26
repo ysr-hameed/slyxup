@@ -10,14 +10,14 @@ const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 const routeDef = createRoute({
   method: "post",
-  path: "/forgot-password",
-  summary: "Send password reset email",
+  path: "/resend-verification",
+  summary: "Resend email verification link",
   tags: ["Auth"],
   request: {
     body: { content: { "application/json": { schema: z.object({ email: z.string().email() }) } } },
   },
   responses: {
-    200: { content: { "application/json": { schema: apiResponseSchema(z.object({ message: z.string() })) } }, description: "Reset email sent" },
+    200: { content: { "application/json": { schema: apiResponseSchema(z.object({ message: z.string() })) } }, description: "Verification email sent" },
   },
 });
 
@@ -26,33 +26,30 @@ route.openapi(routeDef, async (c) => {
   const db = createDb(c.env.DB);
   const user = await db.select().from(schema.users).where(eq(schema.users.email, email)).get();
 
-  if (!user) {
-    return c.json({ success: true, data: { message: "If an account with that email exists, a reset link has been sent." } });
+  if (!user || user.emailVerified) {
+    return c.json({ success: true, data: { message: "If an unverified account exists, a verification email has been sent." } });
   }
 
-  const resetToken = generateToken();
-  const expires = new Date(Date.now() + 3600000).toISOString();
-
+  const verificationToken = generateToken();
   await db.update(schema.users).set({
-    passwordResetToken: resetToken,
-    passwordResetExpires: expires,
+    emailVerificationToken: verificationToken,
+    updatedAt: new Date().toISOString(),
   }).where(eq(schema.users.id, user.id)).run();
 
-  const resetLink = `${c.env.APP_DOMAIN}/reset-password?token=${resetToken}`;
-
+  const verifyLink = `${c.env.APP_DOMAIN}/verify?token=${verificationToken}`;
   fetch(`${c.env.EMAIL_SERVICE_URL}/api/email/send`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": c.env.API_KEY },
     body: JSON.stringify({
       to: [user.email],
-      subject: "Password Reset - SlyxUp",
-      html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link expires in 1 hour.</p>`,
+      subject: "Verify your email - SlyxUp",
+      html: `<p>Click <a href="${verifyLink}">here</a> to verify your email address.</p>`,
     }),
   }).catch(() => {});
 
-  logger.info("password_reset_requested", { userId: user.id, email: user.email });
+  logger.info("verification_resent", { userId: user.id, email: user.email });
 
-  return c.json({ success: true, data: { message: "If an account with that email exists, a reset link has been sent." } });
+  return c.json({ success: true, data: { message: "If an unverified account exists, a verification email has been sent." } });
 });
 
 export default route;

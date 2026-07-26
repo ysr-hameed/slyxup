@@ -88,10 +88,16 @@ route.openapi(callbackDef, async (c) => {
 
   const sessionId = generateId();
   const token = generateToken();
-  const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-  await db.insert(schema.sessions).values({ id: sessionId, userId, token, expiresAt, createdAt: new Date().toISOString() }).run();
+  const ip = c.req.header("CF-Connecting-IP") ?? c.req.header("X-Forwarded-For") ?? "unknown";
+  const userAgent = c.req.header("User-Agent") ?? null;
+  const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+  await db.insert(schema.sessions).values({
+    id: sessionId, userId, token, ip, userAgent,
+    lastSeen: new Date().toISOString(),
+    expiresAt, createdAt: new Date().toISOString(),
+  }).run();
 
-  const jwt = await signToken({ sub: userId, email: googleUser.email, platform_id: "" }, c.env.JWT_SECRET, 86400);
+  const jwt = await signToken({ sub: userId, email: googleUser.email, platform_id: "" }, c.env.JWT_SECRET, 900);
 
   logger.info("google_login", { userId, email: googleUser.email });
 

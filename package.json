@@ -23,10 +23,15 @@
     "db:migrate:admin": "wrangler d1 migrations apply slyxup-admin --local",
     "db:migrate:notification": "wrangler d1 migrations apply slyxup-notification --local",
     "typecheck": "pnpm -r run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "start": "./start.sh"
   },
   "packageManager": "pnpm@11.13.0",
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
   }
 }

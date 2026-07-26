@@ -48,11 +48,22 @@ route.openapi(routeDef, async (c) => {
     createdAt: now, updatedAt: now,
   }).run();
 
+  const verifyLink = `${c.env.APP_DOMAIN}/verify?token=${verificationToken}`;
+  fetch(`${c.env.EMAIL_SERVICE_URL}/api/email/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-API-Key": c.env.API_KEY },
+    body: JSON.stringify({
+      to: [email],
+      subject: "Verify your email - SlyxUp",
+      html: `<p>Welcome! Click <a href="${verifyLink}">here</a> to verify your email address.</p>`,
+    }),
+  }).catch(() => {});
+
   logger.info("user_registered", { userId: id, email });
 
   return c.json({
     success: true,
-    data: { id, email, verificationToken },
+    data: { id, email },
   }, 201);
 });
 

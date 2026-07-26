@@ -34,7 +34,10 @@ export function VerifyEmail({ email }: { email?: string }) {
 
   const resendEmail = async () => {
     if (!email) return;
-    setStatus("resent");
+    try {
+      await api.auth.resendVerification(email);
+      setStatus("resent");
+    } catch {}
   };
 
   return (

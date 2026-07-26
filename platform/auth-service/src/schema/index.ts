@@ -13,6 +13,8 @@ export const users = sqliteTable("users", {
   emailVerificationToken: text("email_verification_token"),
   failedAttempts: integer("failed_attempts").notNull().default(0),
   lockedUntil: text("locked_until"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: text("password_reset_expires"),
   deletedAt: text("deleted_at"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),

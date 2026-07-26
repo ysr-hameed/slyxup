@@ -6,13 +6,14 @@ import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import { Dashboard } from "./pages/Dashboard";
 import { Billing } from "./pages/Billing";
+import { Settings } from "./pages/Settings";
 import { AUTH_BASE } from "./components/Layout";
 
 const api = createSlyxupClient({
   authBaseUrl: AUTH_BASE,
 });
 
-type Page = "auth" | "verify" | "forgot-password" | "reset-password" | "dashboard" | "billing";
+type Page = "auth" | "verify" | "forgot-password" | "reset-password" | "dashboard" | "billing" | "settings";
 
 function getPage(): Page {
   const path = window.location.pathname;
@@ -20,6 +21,7 @@ function getPage(): Page {
   if (path === "/reset-password") return "reset-password";
   if (path === "/verify-email") return "verify";
   if (path === "/billing") return "billing";
+  if (path === "/settings") return "settings";
   if (path === "/dashboard") return "dashboard";
   return "auth";
 }
@@ -27,7 +29,7 @@ function getPage(): Page {
 function navigate(page: Page) {
   const paths: Record<string, string> = {
     auth: "/", verify: "/verify-email", "forgot-password": "/forgot-password",
-    "reset-password": "/reset-password", dashboard: "/dashboard", billing: "/billing",
+    "reset-password": "/reset-password", dashboard: "/dashboard", billing: "/billing", settings: "/settings",
   };
   window.history.pushState({}, "", paths[page] || "/");
   window.dispatchEvent(new Event("popstate"));
@@ -90,6 +92,8 @@ export function App() {
   switch (page) {
     case "billing":
       return <Billing jwt={jwt} user={user} onLogout={handleLogout} />;
+    case "settings":
+      return <Settings jwt={jwt} user={user} onLogout={handleLogout} />;
     default:
       return <Dashboard jwt={jwt} user={user} onLogout={handleLogout} />;
   }

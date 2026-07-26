@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import type { NotificationEnv } from "@slyxup/shared";
-import { setupOpenApi, corsOrigin } from "@slyxup/shared";
+import { setupOpenApi, corsOrigin, applyDefaultRateLimit } from "@slyxup/shared";
 import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import send from "./routes/send";
 
@@ -12,6 +12,8 @@ const app = new OpenAPIHono<{ Bindings: NotificationEnv }>();
 app.use("*", honoLogger());
 app.use("*", cors({ origin: corsOrigin, allowMethods: ["POST", "GET", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-API-Key"] }));
 app.onError(createHonoErrorHandler());
+
+app.use("*", applyDefaultRateLimit);
 
 app.use("*", async (c, next) => {
   const start = Date.now();
