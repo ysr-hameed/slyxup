@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@slyxup/shared": "^1.0.3",
+    "@slyxup/shared": "workspace:*",
     "@slyxup/logger": "^1.0.2",
     "hono": "^4.7.0",
     "@hono/zod-openapi": "^0.19.0",

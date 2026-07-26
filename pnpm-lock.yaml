@@ -135,8 +135,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@slyxup/shared':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.38.0
         version: 0.38.4(@cloudflare/workers-types@4.20260702.1)(@types/react@19.2.17)(react@19.2.7)
@@ -169,8 +169,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@slyxup/shared':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.38.0
         version: 0.38.4(@cloudflare/workers-types@4.20260702.1)(@types/react@19.2.17)(react@19.2.7)
@@ -203,8 +203,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@slyxup/shared':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.38.0
         version: 0.38.4(@cloudflare/workers-types@4.20260702.1)(@types/react@19.2.17)(react@19.2.7)
@@ -237,8 +237,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@slyxup/shared':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.38.0
         version: 0.38.4(@cloudflare/workers-types@4.20260702.1)(@types/react@19.2.17)(react@19.2.7)
@@ -271,8 +271,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@slyxup/shared':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../packages/shared
       hono:
         specifier: ^4.7.0
         version: 4.12.31
@@ -302,8 +302,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@slyxup/shared':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.38.0
         version: 0.38.4(@cloudflare/workers-types@4.20260702.1)(@types/react@19.2.17)(react@19.2.7)
@@ -336,8 +336,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@slyxup/shared':
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: workspace:*
+        version: link:../../packages/shared
       hono:
         specifier: ^4.7.0
         version: 4.12.31
@@ -1170,9 +1170,6 @@ packages:
 
   '@slyxup/sdk@1.0.2':
     resolution: {integrity: sha512-HhooCwwgNhM4aVaztQldtXqGRiT8uD0+g0TmhtQvvEJXw0Buift2gxkiPos9On/DcMGs8MeuU8Oe2m6L8X6wpg==}
-
-  '@slyxup/shared@1.0.3':
-    resolution: {integrity: sha512-13b+4BQ5bZE7YMCmnF1hEgKZX1tM2H99vNAdnVuijtcnG/IubH3MH+ESezOZlIOspxVpwigkI95wJ7vNf7mAhA==}
 
   '@slyxup/storage-client@1.0.2':
     resolution: {integrity: sha512-NQZEf1Jw89SywawkeUdfQ4HfFnDic0jH2yhvZrXOTGmbQUu3xIQMtkzcC4Y7+U4vRWeVQe+OZWCLKHVJajzHhA==}
@@ -2522,10 +2519,6 @@ snapshots:
       '@slyxup/email-client': 1.0.2
       '@slyxup/notification-client': 1.0.2
       '@slyxup/storage-client': 1.0.2
-
-  '@slyxup/shared@1.0.3':
-    dependencies:
-      zod: 3.25.76
 
   '@slyxup/storage-client@1.0.2': {}
 
