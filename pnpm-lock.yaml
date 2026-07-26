@@ -60,26 +60,26 @@ importers:
   packages/sdk:
     dependencies:
       '@slyxup/admin-client':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../admin-client
       '@slyxup/analytics-client':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../analytics-client
       '@slyxup/auth-client':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../auth-client
       '@slyxup/billing-client':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../billing-client
       '@slyxup/email-client':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../email-client
       '@slyxup/notification-client':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../notification-client
       '@slyxup/storage-client':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../storage-client
     devDependencies:
       typescript:
         specifier: ^5.7.0
@@ -132,8 +132,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.10(hono@4.12.31)(zod@3.25.76)
       '@slyxup/logger':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@slyxup/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -166,8 +166,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.10(hono@4.12.31)(zod@3.25.76)
       '@slyxup/logger':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@slyxup/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -200,8 +200,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.10(hono@4.12.31)(zod@3.25.76)
       '@slyxup/logger':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@slyxup/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -234,8 +234,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.10(hono@4.12.31)(zod@3.25.76)
       '@slyxup/logger':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@slyxup/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -268,8 +268,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.10(hono@4.12.31)(zod@3.25.76)
       '@slyxup/logger':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@slyxup/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -299,8 +299,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.10(hono@4.12.31)(zod@3.25.76)
       '@slyxup/logger':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@slyxup/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -333,8 +333,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.10(hono@4.12.31)(zod@3.25.76)
       '@slyxup/logger':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@slyxup/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -1161,9 +1161,6 @@ packages:
 
   '@slyxup/email-client@1.0.2':
     resolution: {integrity: sha512-bndC/2LhGlRoGkNes5shV1+sNdsG7voNqU17creC9g4gQf4YaANBwPFDEd55a8OB8DzeUH1hXWcYzoFZFUEBKw==}
-
-  '@slyxup/logger@1.0.2':
-    resolution: {integrity: sha512-SJsK+2nuTLoXBIpdffbSnOxtUFyI1/NtQbrjC4S+0j4SwlHMNL0rP7Tms1zW60jycE7RiX+8BQJmWZwkst8z1g==}
 
   '@slyxup/notification-client@1.0.2':
     resolution: {integrity: sha512-fbi7CCdLeFUkbjSO44y5fSaVu/lbqOtSjhizMFYCcj5OMZZEzLHhDFmj62+qenYfubFSVjEDEtiqZKtxPMfSNQ==}
@@ -2505,8 +2502,6 @@ snapshots:
   '@slyxup/billing-client@1.0.2': {}
 
   '@slyxup/email-client@1.0.2': {}
-
-  '@slyxup/logger@1.0.2': {}
 
   '@slyxup/notification-client@1.0.2': {}
 
