@@ -40,8 +40,27 @@ route.openapi(routeDef, async (c) => {
   const db = createDb(c.env.DB);
   const user = await db.select().from(schema.users).where(eq(schema.users.email, email)).get();
 
-  if (!user || !user.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
+  if (!user || !user.passwordHash) {
     return c.json({ success: false, error: "Invalid email or password" }, 401);
+  }
+
+  if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
+    return c.json({ success: false, error: "Account temporarily locked. Try again later." }, 423);
+  }
+
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    const newAttempts = (user.failedAttempts ?? 0) + 1;
+    if (newAttempts >= 5) {
+      const lockedUntil = new Date(Date.now() + 15 * 60000).toISOString();
+      await db.update(schema.users).set({ failedAttempts: newAttempts, lockedUntil }).where(eq(schema.users.id, user.id)).run();
+    } else {
+      await db.update(schema.users).set({ failedAttempts: newAttempts }).where(eq(schema.users.id, user.id)).run();
+    }
+    return c.json({ success: false, error: "Invalid email or password" }, 401);
+  }
+
+  if (user.failedAttempts && user.failedAttempts > 0) {
+    await db.update(schema.users).set({ failedAttempts: 0, lockedUntil: null }).where(eq(schema.users.id, user.id)).run();
   }
 
   if (user.blocked) return c.json({ success: false, error: "Account is blocked" }, 403);
@@ -50,13 +69,17 @@ route.openapi(routeDef, async (c) => {
 
   const sessionId = generateId();
   const token = generateToken();
-  const expiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+  const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+  const ip = c.req.header("CF-Connecting-IP") ?? c.req.header("X-Forwarded-For") ?? "unknown";
+  const userAgent = c.req.header("User-Agent") ?? null;
 
   await db.insert(schema.sessions).values({
-    id: sessionId, userId: user.id, token, expiresAt, createdAt: new Date().toISOString(),
+    id: sessionId, userId: user.id, token, ip, userAgent,
+    lastSeen: new Date().toISOString(),
+    expiresAt, createdAt: new Date().toISOString(),
   }).run();
 
-  const jwt = await signToken({ sub: user.id, email: user.email, platform_id: "" }, c.env.JWT_SECRET, 86400);
+  const jwt = await signToken({ sub: user.id, email: user.email, platform_id: "" }, c.env.JWT_SECRET, 900);
 
   logger.info("user_login", { userId: user.id, email: user.email });
 

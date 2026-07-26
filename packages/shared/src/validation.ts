@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const emailSchema = z.string().email().max(255);
-export const passwordSchema = z.string().min(8).max(128);
+export const passwordSchema = z.string().min(8).max(128).regex(
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+  "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+);
 
 export const loginSchema = z.object({
   email: emailSchema,

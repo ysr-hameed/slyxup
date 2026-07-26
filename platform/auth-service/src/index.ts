@@ -8,6 +8,8 @@ import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import register from "./routes/register";
 import login from "./routes/login";
 import logout from "./routes/logout";
+import refresh from "./routes/refresh";
+import logoutAll from "./routes/logout-all";
 import me from "./routes/me";
 import verify from "./routes/verify";
 import google from "./routes/google";
@@ -29,6 +31,8 @@ app.use("*", async (c, next) => {
 app.route("/api/auth", register);
 app.route("/api/auth", login);
 app.route("/api/auth", logout);
+app.route("/api/auth", refresh);
+app.route("/api/auth", logoutAll);
 app.route("/api/auth", me);
 app.route("/api/auth", verify);
 app.route("/api/auth", google);
