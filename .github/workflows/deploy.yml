@@ -64,7 +64,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Auth Service
-        run: curl -sf "https://auth.slyxup.online/api/auth/me" -o /dev/null && echo "✅ auth.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://auth.slyxup.online/api/auth/me" | grep -qE "401|200" && echo "✅ auth.slyxup.online is live"
 
   deploy-billing:
     needs: detect-changes
@@ -86,7 +86,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Billing Service
-        run: curl -sf "https://billing.slyxup.online/api/billing/plans" -o /dev/null && echo "✅ billing.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://billing.slyxup.online/api/billing/plans" | grep -q "200" && echo "✅ billing.slyxup.online is live"
 
   deploy-email:
     needs: detect-changes
@@ -108,7 +108,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Email Service
-        run: curl -sf "https://email.slyxup.online" -o /dev/null && echo "✅ email.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://email.slyxup.online/api/email/send" -X POST -H "Content-Type: application/json" -d '{"to":[],"subject":"","html":""}' | grep -qE "400|401|200" && echo "✅ email.slyxup.online is live"
 
   deploy-analytics:
     needs: detect-changes
@@ -130,7 +130,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Analytics Service
-        run: curl -sf "https://analytics.slyxup.online" -o /dev/null && echo "✅ analytics.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://analytics.slyxup.online/api/analytics/summary" | grep -qE "401|200" && echo "✅ analytics.slyxup.online is live"
 
   deploy-storage:
     needs: detect-changes
@@ -152,7 +152,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Storage Service
-        run: curl -sf "https://storage.slyxup.online" -o /dev/null && echo "✅ storage.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://storage.slyxup.online/api/storage/list" | grep -qE "401|200" && echo "✅ storage.slyxup.online is live"
 
   deploy-admin:
     needs: detect-changes
@@ -174,7 +174,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Admin Service
-        run: curl -sf "https://admin.slyxup.online" -o /dev/null && echo "✅ admin.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://admin.slyxup.online/api/admin/dashboard" | grep -qE "401|200" && echo "✅ admin.slyxup.online is live"
 
   deploy-notification:
     needs: detect-changes
@@ -196,7 +196,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Notification Service
-        run: curl -sf "https://notification.slyxup.online" -o /dev/null && echo "✅ notification.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://notification.slyxup.online/api/notification/logs" | grep -qE "401|200" && echo "✅ notification.slyxup.online is live"
 
   deploy-url-shortener:
     needs: detect-changes
@@ -219,7 +219,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify URL Shortener API
-        run: curl -sf "https://api-url.slyxup.online/api/url" -o /dev/null && echo "✅ api-url.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://api-url.slyxup.online/api/url" | grep -qE "401|200" && echo "✅ api-url.slyxup.online is live"
 
       - name: Build & Deploy URL Shortener Web
         working-directory: products/url-shortener/apps/web
@@ -231,4 +231,4 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify URL Shortener Web
-        run: curl -sf "https://url.slyxup.online" -o /dev/null && echo "✅ url.slyxup.online is live"
+        run: curl -s -o /dev/null -w "%{http_code}" "https://url.slyxup.online" | grep -q "200" && echo "✅ url.slyxup.online is live"
