@@ -15,5 +15,5 @@ minimumReleaseAgeExclude:
   - '@slyxup/logger@1.0.2'
   - '@slyxup/notification-client@1.0.2'
   - '@slyxup/sdk@1.0.2'
-  - '@slyxup/shared@1.0.2'
+  - '@slyxup/shared@1.0.2 || 1.0.3'
   - '@slyxup/storage-client@1.0.2'
