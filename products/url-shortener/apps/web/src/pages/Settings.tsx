@@ -8,7 +8,7 @@ interface SessionInfo {
   lastSeen: string | null; createdAt: string; expiresAt: string;
 }
 
-export function Settings({ jwt, user, onLogout }: { jwt: string; user: { id?: string; name?: string; email: string } | null; onLogout: () => void }) {
+export function Settings({ jwt, user, onLogout }: { jwt: string; user: { id?: string; name?: string | null; email: string } | null; onLogout: () => void }) {
   const api = createSlyxupClient({ authBaseUrl: AUTH_BASE });
 
   const [name, setName] = useState(user?.name || "");

@@ -127,6 +127,16 @@ POST /api/notification/send        → Send notification
 GET  /api/notification/logs        → List notification logs
 ```
 
+## URL Shortener API (port 9000)
+```
+POST /api/url                      → Create short URL (auth required)
+GET  /api/url                      → List user's URLs (auth required, paginated)
+DELETE /api/url/:id                 → Delete a URL (auth required)
+GET  /:slug                        → Redirect to original URL (public)
+
+Plan limits: Free = 10 URLs, 6-char slugs, 30-day expiry; Pro = 1000 URLs, custom slugs, no expiry
+JWT verified locally via shared `verifyToken()` — no auth service call per request
+
 ## Development
 
 ```bash
@@ -207,3 +217,61 @@ No react-router. Manual routing via `window.location.pathname` + `pushState`:
 ## Tests
 
 Vitest workspace at root. Run `pnpm test` for 20+ tests covering shared package (crypto, validation, JWT).
+
+## Deployment workflow
+
+After pushing to `main`, check GitHub Actions status:
+- Open https://github.com/ysr-hameed/slyxup/actions
+- Verify all deploy jobs pass (auth, billing, email, analytics, storage, admin, notification, api, web)
+- If a deploy fails, check the logs — common issues: missing secrets, DB migration not applied, wrangler config mismatch
+- Fix the issue and push again (no need to revert)
+
+## DB schema changes
+
+When adding/modifying columns or tables in any service that uses D1:
+
+1. Edit the schema file in `src/schema/` (e.g. `platform/auth-service/src/schema/users.ts`)
+2. Generate migration file:
+   ```bash
+   pnpm --filter @slyxup/auth-service exec drizzle-kit generate
+   ```
+   (replace `auth-service` with the correct package name)
+3. Apply locally:
+   ```bash
+   pnpm --filter @slyxup/auth-service exec wrangler d1 migrations apply slyxup-auth --local
+   ```
+4. Verify locally by running the service and testing the affected endpoints
+5. Apply to production:
+   ```bash
+   pnpm --filter @slyxup/auth-service exec wrangler d1 migrations apply slyxup-auth --remote
+   ```
+6. Deploy the service:
+   ```bash
+   pnpm --filter @slyxup/auth-service deploy
+   ```
+
+For the URL shortener API (which has no package.json, uses product-level deps):
+```bash
+pnpm --filter @slyxup/url-shortener exec wrangler d1 migrations apply slyxup-url-shortener --local --config apps/api/wrangler.jsonc
+pnpm --filter @slyxup/url-shortener exec wrangler d1 migrations apply slyxup-url-shortener --remote --config apps/api/wrangler.jsonc
+```
+
+## Updating README
+
+When any of these change, update the corresponding README:
+- Adding/removing/renaming packages or services
+- Changing API endpoints
+- Adding new features visible to end users
+- Changing deployment flow or environment variables
+
+README files are in `packages/*/README.md`, `platform/*/README.md`, and `products/url-shortener/README.md`.
+
+## Shared secrets
+
+All services that verify JWTs must share the same `JWT_SECRET`:
+- **auth-service**: signs and verifies JWTs
+- **admin-service**: verifies admin JWTs
+- **url-shortener API**: verifies user JWTs locally (instead of calling auth-service on every request)
+
+Set `JWT_SECRET` via `wrangler secret put JWT_SECRET` in each worker that needs it.
+For local dev, add it to each service's `.dev.vars`.

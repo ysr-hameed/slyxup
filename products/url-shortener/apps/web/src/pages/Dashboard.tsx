@@ -1,64 +1,51 @@
 import { useState, useEffect, useCallback } from "react";
-import { Layout, API_BASE } from "../components/Layout";
+import { Layout } from "../components/Layout";
+import { createUrlClient, type UrlEntry, type CreateUrlResult } from "../lib/api";
+import { API_BASE } from "../config";
 
-interface UrlEntry {
-  id: string; slug: string; originalUrl: string; clicks: number; createdAt: string;
-  title?: string; isCustom: number; isActive: number; expiresAt?: string;
-}
+export function Dashboard({ jwt, user, onLogout }: { jwt: string; user: { name?: string | null; email: string } | null; onLogout: () => void }) {
+  const api = createUrlClient(jwt);
 
-export function Dashboard({ jwt, user, onLogout }: { jwt: string; user: { name?: string; email: string } | null; onLogout: () => void }) {
   const [urls, setUrls] = useState<UrlEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [newUrl, setNewUrl] = useState("");
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
-  const [shortUrl, setShortUrl] = useState("");
-  const [plan, setPlan] = useState<string | null>(null);
+  const [result, setResult] = useState<CreateUrlResult | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showCustom, setShowCustom] = useState(false);
-  const [refresh, setRefresh] = useState(0);
+  const [copied, setCopied] = useState(false);
 
-  const fetchUrls = useCallback(async () => {
+  const fetchUrls = useCallback(async (showLoader = false) => {
+    if (showLoader) setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/url`, { headers: { Authorization: `Bearer ${jwt}` } });
-      const json = await res.json();
-      if (json.success) setUrls(json.data);
+      const data = await api.list();
+      setUrls(data.items);
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }, [jwt]);
 
-  useEffect(() => { fetchUrls(); }, [fetchUrls]);
+  useEffect(() => { fetchUrls(true); }, [fetchUrls]);
 
   const createUrl = async () => {
     setError("");
-    setShortUrl("");
+    setResult(null);
     setCreating(true);
     try {
-      const body: Record<string, string> = { url: newUrl };
-      if (showCustom && slug) body.slug = slug;
-      if (title) body.title = title;
-
-      const res = await fetch(`${API_BASE}/api/url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
-        body: JSON.stringify(body),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setShortUrl(json.data.shortUrl);
-        setPlan(json.data.plan);
-        setNewUrl("");
-        setSlug("");
-        setTitle("");
-        setRefresh(r => r + 1);
-      } else {
-        setError(json.error);
-      }
-    } catch {
-      setError("Network error");
+      const data = await api.create(newUrl, showCustom ? slug : undefined, title || undefined);
+      setResult(data);
+      setNewUrl("");
+      setSlug("");
+      setTitle("");
+      setShowCustom(false);
+      fetchUrls();
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setCreating(false);
     }
@@ -67,19 +54,24 @@ export function Dashboard({ jwt, user, onLogout }: { jwt: string; user: { name?:
   const removeUrl = async (id: string) => {
     if (!confirm("Delete this link?")) return;
     setDeleting(id);
-    await fetch(`${API_BASE}/api/url/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
-    setDeleting(null);
-    setRefresh(r => r + 1);
+    try {
+      await api.remove(id);
+      fetchUrls();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setDeleting(null);
+    }
   };
 
-  const getPlanBadge = () => {
-    const isPro = plan === "pro" || urls.some(u => u.isCustom);
-    return isPro
-      ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-400 font-medium">Pro</span>
-      : <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-medium">Free</span>;
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Failed to copy");
+    }
   };
 
   return (
@@ -87,7 +79,6 @@ export function Dashboard({ jwt, user, onLogout }: { jwt: string; user: { name?:
       <div className="p-4 bg-zinc-900 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-zinc-100 font-semibold">Create Short Link</h2>
-          {getPlanBadge()}
         </div>
 
         <input
@@ -95,7 +86,7 @@ export function Dashboard({ jwt, user, onLogout }: { jwt: string; user: { name?:
           placeholder="https://example.com/very/long/url"
           value={newUrl}
           onChange={e => setNewUrl(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && createUrl()}
+          onKeyDown={e => e.key === "Enter" && !creating && createUrl()}
         />
 
         <input
@@ -130,12 +121,22 @@ export function Dashboard({ jwt, user, onLogout }: { jwt: string; user: { name?:
           {creating ? "Shortening..." : "Shorten"}
         </button>
 
-        {shortUrl && (
-          <div className="p-3 rounded bg-green-900/30 border border-green-700/50 text-sm space-y-1">
-            <p className="text-green-300 break-all">
-              <a href={shortUrl} className="underline" target="_blank" rel="noreferrer">{shortUrl}</a>
+        {result && (
+          <div className="p-3 rounded bg-green-900/30 border border-green-700/50 text-sm space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <a href={result.shortUrl} className="text-green-300 underline truncate" target="_blank" rel="noreferrer">
+                {result.shortUrl}
+              </a>
+              <button
+                onClick={() => copyToClipboard(result.shortUrl)}
+                className="shrink-0 px-2.5 py-1 rounded bg-green-800 text-green-200 text-xs hover:bg-green-700 transition-colors"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <p className="text-zinc-500 text-xs">
+              {result.plan === "pro" ? "Pro" : "Free"} · {result.expiresAt ? `Expires ${new Date(result.expiresAt).toLocaleDateString()}` : "No expiry"}
             </p>
-            {plan && <p className="text-zinc-500 text-xs">Plan: {plan}</p>}
           </div>
         )}
       </div>
@@ -154,12 +155,16 @@ export function Dashboard({ jwt, user, onLogout }: { jwt: string; user: { name?:
             <div key={u.id} className="flex items-center justify-between p-3 bg-zinc-900 rounded-lg">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <a href={`${API_BASE}/${u.slug}`}
-                    className="text-blue-400 underline text-sm hover:text-blue-300"
-                    target="_blank" rel="noreferrer"
-                  >
-                    /{u.slug}
-                  </a>
+                  <span className="text-blue-400 text-sm font-medium truncate">/{u.slug}</span>
+                    <button
+                      onClick={() => copyToClipboard(`${API_BASE}/${u.slug}`)}
+                      className="text-zinc-500 hover:text-zinc-300 shrink-0"
+                      title="Copy short URL"
+                    >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
                   {u.isCustom ? (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-400 font-medium">custom</span>
                   ) : null}

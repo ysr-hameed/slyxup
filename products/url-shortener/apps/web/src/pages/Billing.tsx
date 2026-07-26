@@ -12,7 +12,7 @@ interface Subscription {
   id: string; plan_id: string; status: string; current_period_end: string | null;
 }
 
-export function Billing({ jwt, user, onLogout }: { jwt: string; user: { id?: string; name?: string; email: string } | null; onLogout: () => void }) {
+export function Billing({ jwt, user, onLogout }: { jwt: string; user: { id?: string; name?: string | null; email: string } | null; onLogout: () => void }) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);

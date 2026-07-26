@@ -8,6 +8,7 @@ export interface AuthUser {
 
 export interface Env {
   DB: D1Database;
+  JWT_SECRET: string;
   AUTH_SERVICE_URL: string;
   BILLING_SERVICE_URL: string;
   EMAIL_SERVICE_URL: string;

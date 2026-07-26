@@ -3,7 +3,7 @@ import { AUTH_BASE, API_BASE } from "../config";
 
 export { AUTH_BASE, API_BASE };
 
-export function Layout({ children, user, onLogout }: { children: ReactNode; user?: { id?: string; name?: string; email: string } | null; onLogout?: () => void }) {
+export function Layout({ children, user, onLogout }: { children: ReactNode; user?: { id?: string; name?: string | null; email: string } | null; onLogout?: () => void }) {
   return (
     <div className="min-h-screen bg-zinc-950">
       <header className="border-b border-zinc-800 bg-zinc-900/50">

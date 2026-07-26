@@ -4,10 +4,12 @@ import { logger } from "hono/logger";
 import { drizzle } from "drizzle-orm/d1";
 import { eq, lt, and, sql } from "drizzle-orm";
 import { createSlyxupClient } from "@slyxup/sdk";
+import { verifyToken, applyDefaultRateLimit } from "@slyxup/shared";
+import { createHonoErrorHandler } from "@slyxup/logger";
 import { urls } from "./schema";
 import { createUrlSchema, paginationSchema } from "./validation";
 import { generateId, generateSlug } from "./utils";
-import type { AuthUser, Env, PlanLimits } from "./types";
+import type { Env, PlanLimits } from "./types";
 import { FREE_PLAN, PRO_PLAN } from "./types";
 
 const ALLOWED_ORIGINS = [
@@ -20,7 +22,7 @@ function corsOrigin(origin: string): string | null {
   return ALLOWED_ORIGINS.some((p) => p.test(origin)) ? origin : null;
 }
 
-function createClient(c: any) {
+function getClient(c: any) {
   return createSlyxupClient({
     authBaseUrl: c.env.AUTH_SERVICE_URL,
     billingBaseUrl: c.env.BILLING_SERVICE_URL,
@@ -28,34 +30,33 @@ function createClient(c: any) {
   });
 }
 
-async function getUser(c: any): Promise<AuthUser | null> {
+async function getUser(c: any): Promise<{ id: string; email: string } | null> {
   const auth = c.req.header("Authorization");
   if (!auth?.startsWith("Bearer ")) return null;
-  try {
-    const user = await createClient(c).auth.me(auth.slice(7));
-    if (!user.emailVerified) return null;
-    return user;
-  } catch {
-    return null;
-  }
+  const token = auth.slice(7);
+  const payload = await verifyToken(token, c.env.JWT_SECRET);
+  if (!payload) return null;
+  return { id: payload.sub, email: payload.email };
 }
 
 async function getPlanLimits(c: any, userId: string): Promise<PlanLimits> {
   try {
-    const sub = await createClient(c).billing.getSubscription(userId);
+    const sub = await getClient(c).billing.getSubscription(userId);
     if (sub.status === "active" || sub.status === "trialing") return PRO_PLAN;
   } catch {}
   return FREE_PLAN;
+}
+
+function getShortDomain(c: any): string {
+  if (c.env.ENVIRONMENT === "development") return `localhost:9000`;
+  return "api-url.slyxup.online";
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", logger());
 app.use("*", cors({ origin: corsOrigin }));
-app.onError((err, c) => {
-  console.error(err.message);
-  return c.json({ success: false, error: "Internal server error" }, 500);
-});
+app.onError(createHonoErrorHandler());
 
 app.notFound((c) => c.json({ success: false, error: "Not found" }, 404));
 
@@ -66,7 +67,7 @@ app.post("/api/url", async (c) => {
   const parsed = createUrlSchema.safeParse(await c.req.json());
   if (!parsed.success) {
     const first = parsed.error.errors[0];
-    return c.json({ success: false, error: first.message }, 422);
+    return c.json({ success: false, error: first?.message || "Validation failed" }, 422);
   }
 
   const { url: originalUrl, slug: customSlug, title } = parsed.data;
@@ -78,7 +79,7 @@ app.post("/api/url", async (c) => {
     return c.json({ success: false, error: `Plan limit reached (${plan.maxUrls} URLs). Upgrade to create more.` }, 403);
   }
 
-  let slug: string;
+  let slug = "";
   if (customSlug) {
     if (!plan.customSlug) {
       return c.json({ success: false, error: "Custom slugs require a Pro plan." }, 403);
@@ -100,24 +101,25 @@ app.post("/api/url", async (c) => {
 
   const id = generateId();
   const now = new Date().toISOString();
-  const expiresAt = !plan.customSlug ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : undefined;
+  const expiresAt = plan === FREE_PLAN ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null;
 
   await db.insert(urls).values({
     id, slug, originalUrl, userId: user.id, title, clicks: 0,
     isCustom: customSlug ? 1 : 0, isActive: 1, expiresAt, createdAt: now, updatedAt: now,
   }).run();
 
-  createClient(c).analytics.trackEvent({
+  getClient(c).analytics.trackEvent({
     name: "url_created", platform: "url-shortener", user_id: user.id,
-    properties: JSON.stringify({ slug, custom: !!customSlug }),
+    properties: { slug, custom: !!customSlug },
   }).catch(() => {});
 
-  const proto = c.req.header("X-Forwarded-Proto") || "https";
-  const host = c.req.header("Host") || (c.env.ENVIRONMENT === "development" ? "localhost:9000" : "api-url.slyxup.online");
-  const baseUrl = `${proto}://${host}`;
+  const isDev = c.env.ENVIRONMENT === "development";
+  const proto = isDev ? "http" : c.req.header("X-Forwarded-Proto") || "https";
+  const shortDomain = getShortDomain(c);
+  const shortUrl = `${proto}://${shortDomain}/${slug}`;
   return c.json({
     success: true,
-    data: { id, slug, shortUrl: `${baseUrl}/${slug}`, originalUrl, title: title || null, plan: plan === PRO_PLAN ? "pro" : "free", expiresAt },
+    data: { id, slug, shortUrl, originalUrl, title: title || null, plan: plan === PRO_PLAN ? "pro" : "free", expiresAt },
   });
 });
 
@@ -141,7 +143,8 @@ app.get("/api/url", async (c) => {
 
   const hasMore = list.length > limit;
   const items = hasMore ? list.slice(0, limit) : list;
-  const nextCursor = hasMore ? items[items.length - 1].createdAt : undefined;
+  const last = items[items.length - 1];
+  const nextCursor = last ? last.createdAt : undefined;
 
   return c.json({ success: true, data: items, nextCursor });
 });
@@ -177,7 +180,7 @@ app.get("/:slug", async (c) => {
   const now = new Date().toISOString();
   await db.update(urls).set({ clicks: url.clicks + 1, updatedAt: now }).where(eq(urls.id, url.id)).run();
 
-  createClient(c).analytics.trackPageView({ path: `/${slug}`, platform: "url-shortener" }).catch(() => {});
+  getClient(c).analytics.trackPageView({ path: `/${slug}`, platform: "url-shortener" }).catch(() => {});
 
   return c.redirect(url.originalUrl, 302);
 });

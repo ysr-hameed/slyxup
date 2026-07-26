@@ -7,7 +7,7 @@ import { ResetPassword } from "./pages/ResetPassword";
 import { Dashboard } from "./pages/Dashboard";
 import { Billing } from "./pages/Billing";
 import { Settings } from "./pages/Settings";
-import { AUTH_BASE } from "./components/Layout";
+import { AUTH_BASE } from "./config";
 
 const api = createSlyxupClient({
   authBaseUrl: AUTH_BASE,
@@ -39,7 +39,7 @@ export function App() {
   const [page, setPage] = useState<Page>(getPage);
   const [jwt, setJwt] = useState<string | null>(() => sessionStorage.getItem("jwt"));
   const [pendingEmail, setPendingEmail] = useState<string | undefined>();
-  const [user, setUser] = useState<{ id: string; name?: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; name?: string | null; email: string } | null>(null);
 
   useEffect(() => {
     const handler = () => setPage(getPage());
