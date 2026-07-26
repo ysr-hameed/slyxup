@@ -41,7 +41,11 @@ jobs:
       - name: Check changed packages
         id: changed
         run: |
-          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- packages/ | grep -oP 'packages/\K[^/]+' | sort -u | tr '\n' ' ' || true)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CHANGED=$(ls -d packages/*/ | sed 's|packages/||;s|/||' | tr '\n' ' ')
+          else
+            CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- packages/ | grep -oP 'packages/\K[^/]+' | sort -u | tr '\n' ' ' || true)
+          fi
           echo "changed=$CHANGED" >> $GITHUB_OUTPUT
           echo "Packages changed: $CHANGED"
 
