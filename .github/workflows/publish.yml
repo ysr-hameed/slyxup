@@ -1,6 +1,12 @@
 name: Publish Packages to npm
 
 on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Publish all unpublished packages"
+        required: false
+        default: "true"
   push:
     branches: [main]
     paths:
