@@ -32,7 +32,9 @@ async function getUser(c: any): Promise<AuthUser | null> {
   const auth = c.req.header("Authorization");
   if (!auth?.startsWith("Bearer ")) return null;
   try {
-    return await createClient(c).auth.me(auth.slice(7));
+    const user = await createClient(c).auth.me(auth.slice(7));
+    if (!user.emailVerified) return null;
+    return user;
   } catch {
     return null;
   }

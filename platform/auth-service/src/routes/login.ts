@@ -46,6 +46,7 @@ route.openapi(routeDef, async (c) => {
 
   if (user.blocked) return c.json({ success: false, error: "Account is blocked" }, 403);
   if (user.deletedAt) return c.json({ success: false, error: "Account has been deleted" }, 403);
+  if (!user.emailVerified) return c.json({ success: false, error: "Email not verified. Please check your inbox." }, 403);
 
   const sessionId = generateId();
   const token = generateToken();

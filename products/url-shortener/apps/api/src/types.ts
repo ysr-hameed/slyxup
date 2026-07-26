@@ -3,6 +3,7 @@ export interface AuthUser {
   email: string;
   name: string | null;
   avatarUrl?: string | null;
+  emailVerified: boolean;
 }
 
 export interface Env {

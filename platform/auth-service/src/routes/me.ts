@@ -18,7 +18,7 @@ const routeDef = createRoute({
         "application/json": {
           schema: apiResponseSchema(z.object({
             id: z.string(), email: z.string(), name: z.string().nullable(),
-            avatarUrl: z.string().nullable(), createdAt: z.string(),
+            avatarUrl: z.string().nullable(), emailVerified: z.boolean(), createdAt: z.string(),
           })),
         },
       },
@@ -43,7 +43,7 @@ route.openapi(routeDef, async (c) => {
 
   return c.json({
     success: true,
-    data: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, createdAt: user.createdAt },
+    data: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, emailVerified: !!user.emailVerified, createdAt: user.createdAt },
   });
 });
 

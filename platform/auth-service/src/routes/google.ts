@@ -79,7 +79,7 @@ route.openapi(callbackDef, async (c) => {
     const now = new Date().toISOString();
     await db.insert(schema.users).values({
       id: userId, email: googleUser.email, name: googleUser.name,
-      avatarUrl: googleUser.picture, createdAt: now, updatedAt: now,
+      avatarUrl: googleUser.picture, emailVerified: 1, createdAt: now, updatedAt: now,
     }).run();
     await db.insert(schema.oauthAccounts).values({
       id: generateId(), userId, provider: "google", providerUserId: googleUser.id, createdAt: now,
