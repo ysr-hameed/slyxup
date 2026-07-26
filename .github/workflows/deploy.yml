@@ -1,4 +1,3 @@
-# Auto-deploy on push to main
 name: Deploy Platform Services
 
 on:
