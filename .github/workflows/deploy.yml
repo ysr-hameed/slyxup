@@ -108,7 +108,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify Email Service
-        run: curl -s -o /dev/null -w "%{http_code}" "https://email.slyxup.online/api/email/send" -X POST -H "Content-Type: application/json" -d '{"to":[],"subject":"","html":""}' | grep -qE "400|401|200" && echo "✅ email.slyxup.online is live"
+        run: >-
+          curl -s -o /dev/null -w "%{http_code}"
+          "https://email.slyxup.online/api/email/send"
+          -X POST -H "Content-Type: application/json"
+          -d '{"to":[],"subject":"","html":""}'
+          | grep -qE "400|401|200"
+          && echo "email service is live"
 
   deploy-analytics:
     needs: detect-changes
