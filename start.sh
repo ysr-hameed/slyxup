@@ -19,27 +19,60 @@ PRODUCTS=(
   "url-shortener-web:5173:products/url-shortener/apps/web:vite"
 )
 
+ALL_ENTRIES=("${SERVICES[@]}" "${PRODUCTS[@]}")
+
 cmd="${1:-help}"
 shift || true
 
-show_urls() {
+box() { printf "║  %-47s  ║\n" "$*"; }
+
+get_pid() {
+  lsof -ti :"$1" 2>/dev/null || true
+}
+
+status_icon() {
+  local port="$1"
+  local pid
+  pid=$(get_pid "$port")
+  if [ -n "$pid" ]; then
+    local elapsed
+    if [ -f "$LOGS/$2.pid" ]; then
+      local started
+      started=$(stat -c %Y "$LOGS/$2.pid" 2>/dev/null || echo 0)
+      local now
+      now=$(date +%s)
+      local diff=$((now - started))
+      if [ $diff -lt 60 ]; then
+        elapsed="${diff}s"
+      elif [ $diff -lt 3600 ]; then
+        elapsed="$((diff / 60))m"
+      else
+        elapsed="$((diff / 3600))h"
+      fi
+    else
+      elapsed="?"
+    fi
+    printf "\033[32m✓\033[0m  \033[1m%-20s\033[0m \033[90mhttp://localhost:%-5s\033[0m  \033[90mPID %-6s\033[0m \033[90m(up %s)\033[0m" "$2" "$port" "$pid" "$elapsed"
+  else
+    printf "\033[31m✗\033[0m  %-20s \033[90mhttp://localhost:%-5s\033[0m  \033[90m%-14s\033[0m" "$2" "$port" "stopped"
+  fi
+}
+
+show_status() {
   local header="$1"
   shift
-  printf "\n╔═══════════════════════════════════════════════╗\n"
-  printf "║  %-43s  ║\n" "$header"
-  printf "║───────────────────────────────────────────────║\n"
+  printf "╔═══════════════════════════════════════════════════════════════════════╗\n"
+  box "$header"
+  printf "╠═══════════════════════════════════════════════════════════════════════╣\n"
   for entry in "$@"; do
     local name="${entry%%:*}"
     local rest="${entry#*:}"
     local port="${rest%%:*}"
-    local running=$(lsof -ti :"$port" 2>/dev/null || true)
-    if [ -n "$running" ]; then
-      printf "║  \033[32m✓\033[0m  %-20s → http://localhost:%-5s  ║\n" "$name" "$port"
-    else
-      printf "║  \033[31m✗\033[0m  %-20s http://localhost:%-5s  ║\n" "$name" "$port"
-    fi
+    printf "║  "
+    status_icon "$port" "$name"
+    printf "  ║\n"
   done
-  printf "╚═══════════════════════════════════════════════╝\n"
+  printf "╚═══════════════════════════════════════════════════════════════════════╝\n"
 }
 
 start_entry() {
@@ -53,7 +86,7 @@ start_entry() {
   if [ "$runner" = "$dir" ]; then runner="wrangler"; fi
 
   mkdir -p "$LOGS"
-  pid=$(lsof -ti :"$port" 2>/dev/null || true)
+  pid=$(get_pid "$port")
   if [ -n "$pid" ]; then
     echo "  $name already running (PID $pid, port $port)"
     return
@@ -74,9 +107,8 @@ start_entry() {
   fi
   echo $! > "$LOGS/$name.pid"
 
-  # Wait up to 15s for the port to be ready
   for i in $(seq 1 15); do
-    if lsof -ti :"$port" >/dev/null 2>&1; then
+    if get_pid "$port" >/dev/null 2>&1; then
       sleep 1
       break
     fi
@@ -86,14 +118,27 @@ start_entry() {
 
 stop_by_port() {
   local port="$1"
-  local pid=$(lsof -ti :"$port" 2>/dev/null || true)
+  local name="$2"
+  local pid
+  pid=$(get_pid "$port")
   if [ -n "$pid" ]; then
     kill "$pid" 2>/dev/null || true
-    echo "  Stopped process on port $port (PID $pid)"
+    echo "  Stopped $name (PID $pid, port $port)"
+    rm -f "$LOGS/$name.pid" 2>/dev/null || true
   fi
 }
 
-ALL_ENTRIES=("${SERVICES[@]}" "${PRODUCTS[@]}")
+stop_all() {
+  for entry in "${ALL_ENTRIES[@]}"; do
+    local name="${entry%%:*}"
+    local rest="${entry#*:}"
+    local port="${rest%%:*}"
+    stop_by_port "$port" "$name"
+  done
+  pkill -f "wrangler dev" 2>/dev/null || true
+  pkill -f "vite" 2>/dev/null || true
+  echo "All services stopped"
+}
 
 case "$cmd" in
   start)
@@ -113,14 +158,15 @@ case "$cmd" in
         ;;
     esac
 
-    for entry in "${SERVICES[@]}" "${PRODUCTS[@]}"; do
+    for entry in "${ALL_ENTRIES[@]}"; do
       name="${entry%%:*}"
       if [ "$scope" = "$name" ]; then
         start_entry "$entry"
       fi
     done
 
-    show_urls "Running Services" "${ALL_ENTRIES[@]}"
+    echo ""
+    show_status "Running Services" "${ALL_ENTRIES[@]}"
     echo "Logs: ./start.sh logs <name>"
     ;;
 
@@ -129,31 +175,52 @@ case "$cmd" in
     shift || true
 
     if [ "$scope" = "all" ]; then
-      for entry in "${ALL_ENTRIES[@]}"; do
-        name="${entry%%:*}"
-        rest="${entry#*:}"
-        port="${rest%%:*}"
-        stop_by_port "$port"
-        rm -f "$LOGS/$name.pid"
-      done
-      pkill -f "wrangler dev" 2>/dev/null || true
-      pkill -f "vite" 2>/dev/null || true
-      echo "All services stopped"
+      stop_all
     else
       for entry in "${ALL_ENTRIES[@]}"; do
         name="${entry%%:*}"
         rest="${entry#*:}"
         port="${rest%%:*}"
         if [ "$scope" = "$name" ] || [ "$scope" = "$port" ]; then
-          stop_by_port "$port"
-          rm -f "$LOGS/$name.pid"
+          stop_by_port "$port" "$name"
         fi
       done
     fi
     ;;
 
+  restart)
+    scope="${1:-all}"
+    shift || true
+
+    echo "=== Restarting $scope ==="
+    if [ "$scope" = "all" ]; then
+      stop_all
+      sleep 1
+      for entry in "${SERVICES[@]}"; do start_entry "$entry"; done
+      for entry in "${PRODUCTS[@]}"; do start_entry "$entry"; done
+    else
+      for entry in "${ALL_ENTRIES[@]}"; do
+        name="${entry%%:*}"
+        rest="${entry#*:}"
+        port="${rest%%:*}"
+        if [ "$scope" = "$name" ] || [ "$scope" = "$port" ]; then
+          stop_by_port "$port" "$name"
+          sleep 1
+          start_entry "$entry"
+        fi
+      done
+    fi
+    echo ""
+    show_status "Restarted Services" "${ALL_ENTRIES[@]}"
+    ;;
+
   status)
-    show_urls "Service Status" "${ALL_ENTRIES[@]}"
+    echo ""
+    if [ -n "$(ls "$LOGS"/*.pid 2>/dev/null)" ]; then
+      show_status "Service Status" "${ALL_ENTRIES[@]}"
+    else
+      show_status "All Services Stopped" "${ALL_ENTRIES[@]}"
+    fi
     ;;
 
   logs)
@@ -176,12 +243,15 @@ case "$cmd" in
     echo "      core               Platform (auth:8000 → notification:8006)"
     echo "      product            Products (url-shortener:9000, web:5173)"
     echo "      all                Both core + products"
-    echo "      <name>             Start by name (auth-service, url-shortener, url-shortener-web)"
+    echo "      <name>             Start by name (e.g. auth-service, url-shortener)"
     echo ""
     echo "  stop [scope]     Stop services"
     echo "    Scopes: all, <name>, or <port>"
     echo ""
-    echo "  status           Show running services with URLs"
+    echo "  restart [scope]  Stop then start again"
+    echo "    Scopes: all (default), <name>, or <port>"
+    echo ""
+    echo "  status           Show running services (port, PID, uptime)"
     echo "  logs [name]      Tail logs (default: auth)"
     echo ""
     echo "Examples:"
@@ -189,7 +259,9 @@ case "$cmd" in
     echo "  ./start.sh start all               # Everything"
     echo "  ./start.sh start url-shortener-web # Frontend only"
     echo "  ./start.sh status                  # Show URLs + status"
+    echo "  ./start.sh restart billing-service # Restart billing"
+    echo "  ./start.sh restart all             # Restart everything"
     echo "  ./start.sh stop 5173               # Stop frontend"
-    echo "  ./start.sh stop all                # Stop everything"
     ;;
+
 esac

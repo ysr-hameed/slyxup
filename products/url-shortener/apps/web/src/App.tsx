@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createSlyxupClient } from "@slyxup/sdk";
+import { Landing } from "./pages/Landing";
 import { AuthPage } from "./pages/AuthPage";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import { ForgotPassword } from "./pages/ForgotPassword";
@@ -9,26 +10,25 @@ import { Billing } from "./pages/Billing";
 import { Settings } from "./pages/Settings";
 import { AUTH_BASE } from "./config";
 
-const api = createSlyxupClient({
-  authBaseUrl: AUTH_BASE,
-});
+const api = createSlyxupClient({ authBaseUrl: AUTH_BASE });
 
-type Page = "auth" | "verify" | "forgot-password" | "reset-password" | "dashboard" | "billing" | "settings";
+type Page = "landing" | "login" | "verify" | "forgot-password" | "reset-password" | "dashboard" | "billing" | "settings";
 
 function getPage(): Page {
   const path = window.location.pathname;
+  if (path === "/login") return "login";
   if (path === "/forgot-password") return "forgot-password";
   if (path === "/reset-password") return "reset-password";
   if (path === "/verify-email") return "verify";
   if (path === "/billing") return "billing";
   if (path === "/settings") return "settings";
   if (path === "/dashboard") return "dashboard";
-  return "auth";
+  return "landing";
 }
 
 function navigate(page: Page) {
   const paths: Record<string, string> = {
-    auth: "/", verify: "/verify-email", "forgot-password": "/forgot-password",
+    landing: "/", login: "/login", verify: "/verify-email", "forgot-password": "/forgot-password",
     "reset-password": "/reset-password", dashboard: "/dashboard", billing: "/billing", settings: "/settings",
   };
   window.history.pushState({}, "", paths[page] || "/");
@@ -48,12 +48,11 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (jwt) {
+    if (jwt && !user) {
       api.auth.me(jwt).then(setUser).catch(() => {
         sessionStorage.removeItem("jwt");
         setJwt(null);
-        setUser(null);
-        navigate("auth");
+        navigate("landing");
       });
     }
   }, [jwt]);
@@ -73,11 +72,13 @@ export function App() {
     sessionStorage.removeItem("jwt");
     setJwt(null);
     setUser(null);
-    navigate("auth");
+    navigate("landing");
   };
 
   if (!jwt) {
     switch (page) {
+      case "login":
+        return <AuthPage onLogin={handleLogin} onRegistered={handleRegistered} />;
       case "verify":
         return <VerifyEmail email={pendingEmail} />;
       case "forgot-password":
@@ -85,7 +86,7 @@ export function App() {
       case "reset-password":
         return <ResetPassword />;
       default:
-        return <AuthPage onLogin={handleLogin} onRegistered={handleRegistered} />;
+        return <Landing />;
     }
   }
 
