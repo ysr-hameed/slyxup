@@ -86,10 +86,17 @@ start_entry() {
   if [ "$runner" = "$dir" ]; then runner="wrangler"; fi
 
   mkdir -p "$LOGS"
+
   pid=$(get_pid "$port")
   if [ -n "$pid" ]; then
     echo "  $name already running (PID $pid, port $port)"
     return
+  fi
+
+  old=$(pgrep -f "wrangler dev.*--port $port" 2>/dev/null || true)
+  if [ -n "$old" ]; then
+    kill $old 2>/dev/null || true
+    sleep 1
   fi
 
   full="$ROOT/$dir"
