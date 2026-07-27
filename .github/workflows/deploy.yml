@@ -26,8 +26,8 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} 2>/dev/null || echo "")
 
-          # If shared packages, logger, workflows, or root package.json changed → deploy ALL
-          if echo "$CHANGED" | grep -qE "^packages/(shared|logger)/|^\.github/workflows/|^package\.json$"; then
+          # If shared packages or logger changed → deploy ALL (all services depend on them)
+          if echo "$CHANGED" | grep -qE "^packages/(shared|logger)/"; then
             echo "auth-service=true" >> $GITHUB_OUTPUT
             echo "billing-service=true" >> $GITHUB_OUTPUT
             echo "email-service=true" >> $GITHUB_OUTPUT
@@ -37,7 +37,7 @@ jobs:
             echo "notification-service=true" >> $GITHUB_OUTPUT
             echo "url-shortener-api=true" >> $GITHUB_OUTPUT
             echo "url-shortener-web=true" >> $GITHUB_OUTPUT
-            echo "Trigger: shared packages / workflows / root package.json changed"
+            echo "Trigger: shared packages changed"
             exit 0
           fi
 
@@ -284,10 +284,9 @@ jobs:
       - name: Deploy to Pages
         continue-on-error: true
         working-directory: products/url-shortener/apps/web
-        run: pnpm wrangler pages deploy dist --project-name slyxup-url-shortener-web
+        run: pnpm wrangler pages deploy dist --project-name slyxup-url-shortener-web --account-id ed01399ae5f7a46697e0802e4eaef6a9
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://url.slyxup.online")
