@@ -284,9 +284,10 @@ jobs:
       - name: Deploy to Pages
         continue-on-error: true
         working-directory: products/url-shortener/apps/web
-        run: pnpm wrangler pages deploy dist --project-name slyxup-url-shortener-web --account-id ed01399ae5f7a46697e0802e4eaef6a9
+        run: pnpm wrangler pages deploy dist --project-name slyxup-url-shortener-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ed01399ae5f7a46697e0802e4eaef6a9
       - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://url.slyxup.online")
