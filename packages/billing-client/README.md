@@ -52,6 +52,16 @@ const { url } = await billing.createCheckout({
 // → redirect user to Paddle checkout at `url`
 ```
 
+### Portal
+
+```ts
+const { url } = await billing.createPortal({
+  user_id: "user_xyz",
+  platform: "url-shortener",
+});
+// → redirect user to Paddle customer portal at `url`
+```
+
 ### Subscription
 
 ```ts
@@ -82,6 +92,7 @@ const sub = await billing.getSubscription("user_xyz");
 |--------|-----------|---------|
 | `listPlans` | `platform?: string` | `Plan[]` |
 | `createCheckout` | `CheckoutRequest` | `{ url }` |
+| `createPortal` | `PortalRequest` | `{ url }` |
 | `getSubscription` | `userId: string` | `Subscription` |
 
 ### Types
@@ -93,6 +104,11 @@ interface CheckoutRequest {
   platform: string;
   success_url: string;
   cancel_url: string;
+}
+
+interface PortalRequest {
+  user_id: string;
+  platform: string;
 }
 ```
 

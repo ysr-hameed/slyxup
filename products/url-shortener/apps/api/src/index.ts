@@ -24,6 +24,7 @@ function corsOrigin(origin: string): string | null {
 
 function getClient(c: any) {
   return createSlyxupClient({
+    apiKey: c.env.API_KEY,
     authBaseUrl: c.env.AUTH_SERVICE_URL,
     billingBaseUrl: c.env.BILLING_SERVICE_URL,
     analyticsBaseUrl: c.env.ANALYTICS_SERVICE_URL,
@@ -56,6 +57,7 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", logger());
 app.use("*", cors({ origin: corsOrigin }));
+app.use("*", applyDefaultRateLimit);
 app.onError(createHonoErrorHandler());
 
 app.notFound((c) => c.json({ success: false, error: "Not found" }, 404));

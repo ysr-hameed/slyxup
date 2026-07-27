@@ -28,9 +28,15 @@ export interface Subscription {
   current_period_end: string | null;
 }
 
+export interface PortalRequest {
+  user_id: string;
+  platform: string;
+}
+
 export interface BillingClient {
   listPlans(platform?: string): Promise<Plan[]>;
   createCheckout(data: CheckoutRequest): Promise<{ url: string }>;
+  createPortal(data: PortalRequest): Promise<{ url: string }>;
   getSubscription(userId: string): Promise<Subscription>;
 }
 
@@ -51,6 +57,15 @@ export function createBillingClient(config: BillingClientConfig): BillingClient 
 
     async createCheckout(data) {
       const res = await fetch(`${config.baseUrl}/api/billing/create-checkout`, {
+        method: "POST", headers, body: JSON.stringify(data),
+      });
+      const json: any = await res.json();
+      if (!json.success) throw new Error(json.error);
+      return json.data;
+    },
+
+    async createPortal(data) {
+      const res = await fetch(`${config.baseUrl}/api/billing/create-portal`, {
         method: "POST", headers, body: JSON.stringify(data),
       });
       const json: any = await res.json();
