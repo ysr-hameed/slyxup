@@ -57,13 +57,13 @@ await api.storage.upload(file);
 
 | Service | Domain | Account |
 |---------|--------|---------|
-| Auth | auth.slyxup.in | #1 |
-| Billing | billing.slyxup.in | #2 |
-| Email | email.slyxup.in | #3 |
-| Analytics | analytics.slyxup.in | #4 |
-| Storage | storage.slyxup.in | #5 |
-| Admin | admin.slyxup.in | #6 |
-| Notification | notification.slyxup.in | #7 |
+| Auth | auth.slyxup.online | #1 |
+| Billing | billing.slyxup.online | #2 |
+| Email | email.slyxup.online | #3 |
+| Analytics | analytics.slyxup.online | #4 |
+| Storage | storage.slyxup.online | #5 |
+| Admin | admin.slyxup.online | #6 |
+| Notification | notification.slyxup.online | #7 |
 
 ### Dev ports
 
@@ -183,6 +183,49 @@ platform/{name}-service/
 | `X-API-Key` | Service-to-service |
 | `X-Admin-Key` | Admin endpoints |
 
+## Shared secrets
+
+Services that need to talk are connected via shared secrets. The `.env.prod` file at the project root tracks the canonical values:
+
+| Secret | Used by | Purpose |
+|--------|---------|---------|
+| `API_KEY` | auth-service → email-service | Auth sends verification/reset emails through email-service |
+| `JWT_SECRET` | auth-service, admin-service, url-shortener API | JWT signing and local verification |
+
+Set each secret on every worker that needs it:
+```bash
+cat .env.prod | grep API_KEY | cut -d= -f2- | tr -d ' ' | xargs -I{} sh -c 'echo -n "{}" | wrangler secret put API_KEY --name slyxup-auth'
+cat .env.prod | grep JWT_SECRET | cut -d= -f2- | tr -d ' ' | xargs -I{} sh -c 'echo -n "{}" | wrangler secret put JWT_SECRET --name slyxup-url-shortener'
+```
+
+For local dev, add the required secrets to each service's `.dev.vars`.
+
+## Local development tips
+
+### Email/password flow locally
+Since the email service is only available in production, verification/reset links are
+logged to the server console in development mode. After registering, check the auth service
+logs for:
+```
+{"level":"info","message":"dev_verification_link","verifyLink":"http://localhost:5173/verify?token=..."}
+```
+
+Make sure `APP_DOMAIN` is set in `platform/auth-service/.dev.vars`:
+```
+APP_DOMAIN=http://localhost:5173
+```
+
+### Missing DB tables locally
+If a service returns `D1_ERROR: no such table`, apply its migrations:
+```bash
+pnpm --filter @slyxup/<service-name> exec wrangler d1 migrations apply slyxup-<db-name> --local
+```
+
+For the URL shortener API (uses product-level wrangler config):
+```bash
+pnpm --filter @slyxup/url-shortener exec wrangler d1 migrations apply slyxup-url-shortener --local --config apps/api/wrangler.jsonc
+```
+
 ## Known issues
 
 - **pnpm install crashes** (OOM/SIGTERM kills the process). Manual symlinks are maintained for typechecks instead.
@@ -190,24 +233,50 @@ platform/{name}-service/
 
 ## Deployment
 
-Each service deploys independently to its own Cloudflare account:
+Each service deploys independently. Before deploying, ensure required secrets are set on the target worker:
 
 ```bash
-pnpm --filter @slyxup/auth-service deploy         # Account #1
-pnpm --filter @slyxup/billing-service deploy      # Account #2
-pnpm --filter @slyxup/url-shortener deploy        # Product
+# List current secrets
+npx wrangler secret list --name slyxup-auth
+
+# Set API_KEY on auth (needed to call email service)
+echo -n "sk-slyxup-s1785136484" | wrangler secret put API_KEY --name slyxup-auth
+
+# Set API_KEY on email (needed to accept requests from auth)
+echo -n "sk-slyxup-s1785136484" | wrangler secret put API_KEY --name slyxup-email
+
+# Set JWT_SECRET on url-shortener API (local JWT verification)
+echo -n "your-jwt-secret" | wrangler secret put JWT_SECRET --name slyxup-url-shortener
 ```
 
-DNS: CNAME records in `slyxup.in` zone → `*.workers.dev` domains.
+Then deploy:
+
+```bash
+pnpm --filter @slyxup/auth-service deploy         # auth.slyxup.online
+pnpm --filter @slyxup/billing-service deploy      # billing.slyxup.online
+pnpm --filter @slyxup/email-service deploy        # email.slyxup.online
+pnpm --filter @slyxup/analytics-service deploy    # analytics.slyxup.online
+pnpm --filter @slyxup/storage-service deploy      # storage.slyxup.online
+pnpm --filter @slyxup/admin-service deploy        # admin.slyxup.online
+pnpm --filter @slyxup/notification-service deploy # notification.slyxup.online
+pnpm --filter @slyxup/url-shortener deploy:api    # api-url.slyxup.online
+pnpm --filter @slyxup/url-shortener deploy:web    # url.slyxup.online (Pages)
+```
 
 ## API endpoints
 
 ### Auth (8000)
 ```
-POST /api/auth/register  POST /api/auth/login
-POST /api/auth/logout    GET  /api/auth/me
-GET  /api/auth/verify    GET  /api/auth/google
-GET  /api/auth/google/callback
+POST /api/auth/register            POST /api/auth/login
+POST /api/auth/logout              POST /api/auth/refresh
+POST /api/auth/logout-all          GET  /api/auth/me
+PATCH /api/auth/me                 DELETE /api/auth/me
+GET  /api/auth/verify              POST /api/auth/change-password
+POST /api/auth/forgot-password     POST /api/auth/reset-password
+POST /api/auth/resend-verification GET  /api/auth/google
+GET  /api/auth/google/callback     GET  /api/auth/github
+GET  /api/auth/github/callback     GET  /api/auth/sessions
+DELETE /api/auth/sessions/:id
 ```
 
 ### Billing (8001)

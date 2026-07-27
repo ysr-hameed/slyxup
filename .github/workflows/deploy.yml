@@ -56,6 +56,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
+      - name: Set API Key
+        run: echo "${{ secrets.API_KEY }}" | npx wrangler secret put API_KEY --name slyxup-auth
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Deploy Auth Service
         working-directory: platform/auth-service
         run: npx wrangler deploy
@@ -100,6 +105,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
+      - name: Set API Key
+        run: echo "${{ secrets.API_KEY }}" | npx wrangler secret put API_KEY --name slyxup-email
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Deploy Email Service
         working-directory: platform/email-service
         run: npx wrangler deploy
@@ -219,6 +229,12 @@ jobs:
 
       - name: Set JWT Secret
         run: echo "${{ secrets.JWT_SECRET }}" | npx wrangler secret put JWT_SECRET --name slyxup-url-shortener
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set API Key
+        run: echo "${{ secrets.API_KEY }}" | npx wrangler secret put API_KEY --name slyxup-url-shortener
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
