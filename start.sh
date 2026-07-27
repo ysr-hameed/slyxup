@@ -30,6 +30,38 @@ get_pid() {
   lsof -ti :"$1" 2>/dev/null || true
 }
 
+wrangler_pids() {
+  local port="$1"
+  pgrep -f "cli.js dev.*--port $port" 2>/dev/null || true
+}
+
+workerd_pids() {
+  local port="$1"
+  pgrep -f "workerd.*localhost:$port" 2>/dev/null || true
+}
+
+kill_all_on_port() {
+  local port="$1"
+  local name="$2"
+
+  local pids
+  pids="$(get_pid "$port")"
+  local w_pids
+  w_pids="$(wrangler_pids "$port" 2>/dev/null || true)"
+  local wd_pids
+  wd_pids="$(workerd_pids "$port" 2>/dev/null || true)"
+
+  kill $pids $w_pids $wd_pids 2>/dev/null || true
+  sleep 1
+
+  pids="$(get_pid "$port")"
+  w_pids="$(wrangler_pids "$port" 2>/dev/null || true)"
+  wd_pids="$(workerd_pids "$port" 2>/dev/null || true)"
+  kill -9 $pids $w_pids $wd_pids 2>/dev/null || true
+
+  rm -f "$LOGS/$name.pid" 2>/dev/null || true
+}
+
 status_icon() {
   local port="$1"
   local pid
@@ -93,10 +125,19 @@ start_entry() {
     return
   fi
 
-  old=$(pgrep -f "wrangler dev.*--port $port" 2>/dev/null || true)
-  if [ -n "$old" ]; then
-    kill $old 2>/dev/null || true
+  local orphans
+  orphans="$(wrangler_pids "$port" 2>/dev/null || true)"
+  local work_orphans
+  work_orphans="$(workerd_pids "$port" 2>/dev/null || true)"
+  if [ -n "$orphans" ] || [ -n "$work_orphans" ]; then
+    kill $orphans $work_orphans 2>/dev/null || true
     sleep 1
+    orphans="$(wrangler_pids "$port" 2>/dev/null || true)"
+    work_orphans="$(workerd_pids "$port" 2>/dev/null || true)"
+    if [ -n "$orphans" ] || [ -n "$work_orphans" ]; then
+      kill -9 $orphans $work_orphans 2>/dev/null || true
+      sleep 1
+    fi
   fi
 
   full="$ROOT/$dir"
@@ -126,13 +167,8 @@ start_entry() {
 stop_by_port() {
   local port="$1"
   local name="$2"
-  local pid
-  pid=$(get_pid "$port")
-  if [ -n "$pid" ]; then
-    kill "$pid" 2>/dev/null || true
-    echo "  Stopped $name (PID $pid, port $port)"
-    rm -f "$LOGS/$name.pid" 2>/dev/null || true
-  fi
+  kill_all_on_port "$port" "$name"
+  echo "  Stopped $name (port $port)"
 }
 
 stop_all() {
@@ -140,10 +176,15 @@ stop_all() {
     local name="${entry%%:*}"
     local rest="${entry#*:}"
     local port="${rest%%:*}"
-    stop_by_port "$port" "$name"
+    kill_all_on_port "$port" "$name"
   done
-  pkill -f "wrangler dev" 2>/dev/null || true
+
+  pkill -f "workerd.*serve" 2>/dev/null || true
   pkill -f "vite" 2>/dev/null || true
+  sleep 1
+  pkill -9 -f "workerd.*serve" 2>/dev/null || true
+  pkill -9 -f "vite" 2>/dev/null || true
+
   echo "All services stopped"
 }
 
@@ -241,6 +282,16 @@ case "$cmd" in
     tail -f "$logfile"
     ;;
 
+  cleanup)
+    echo "=== Force-cleaning all wrangler, workerd, and vite processes ==="
+    pkill -9 -f "workerd" 2>/dev/null || true
+    pkill -9 -f "wrangler" 2>/dev/null || true
+    pkill -9 -f "vite" 2>/dev/null || true
+    rm -f "$LOGS"/*.pid 2>/dev/null || true
+    sleep 1
+    echo "Done"
+    ;;
+
   help|*)
     echo "Usage: ./start.sh <command> [args]"
     echo ""
@@ -259,6 +310,7 @@ case "$cmd" in
     echo "    Scopes: all (default), <name>, or <port>"
     echo ""
     echo "  status           Show running services (port, PID, uptime)"
+    echo "  cleanup          Force-kill all wrangler/vite processes (zombie cleanup)"
     echo "  logs [name]      Tail logs (default: auth)"
     echo ""
     echo "Examples:"
