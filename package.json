@@ -25,7 +25,14 @@
     "typecheck": "pnpm -r run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "./start.sh"
+    "start": "./start.sh",
+    "start:core": "./start.sh start core",
+    "start:all": "./start.sh start all",
+    "stop:all": "./start.sh stop all",
+    "status": "./start.sh status",
+    "check": "./start.sh check",
+    "logs": "./start.sh logs",
+    "clean": "./start.sh cleanup"
   },
   "packageManager": "pnpm@11.13.0",
   "engines": {

@@ -3,23 +3,20 @@ name: Deploy Platform Services
 on:
   push:
     branches: [main]
-    paths:
-      - "platform/*/src/**"
-      - "platform/*/wrangler.jsonc"
-      - "platform/*/package.json"
-      - "products/*/apps/api/src/**"
-      - "products/*/apps/api/wrangler.jsonc"
-      - "products/*/apps/web/**"
-      - "packages/shared/src/**"
-      - "packages/logger/src/**"
-      - ".github/workflows/**"
-      - "package.json"
 
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      services: ${{ steps.changed.outputs.services }}
+      auth-service: ${{ steps.changed.outputs.auth-service }}
+      billing-service: ${{ steps.changed.outputs.billing-service }}
+      email-service: ${{ steps.changed.outputs.email-service }}
+      analytics-service: ${{ steps.changed.outputs.analytics-service }}
+      storage-service: ${{ steps.changed.outputs.storage-service }}
+      admin-service: ${{ steps.changed.outputs.admin-service }}
+      notification-service: ${{ steps.changed.outputs.notification-service }}
+      url-shortener-api: ${{ steps.changed.outputs.url-shortener-api }}
+      url-shortener-web: ${{ steps.changed.outputs.url-shortener-web }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,25 +25,44 @@ jobs:
       - id: changed
         run: |
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} 2>/dev/null || echo "")
-          SERVICES=""
+
+          # If shared packages, logger, workflows, or root package.json changed → deploy ALL
+          if echo "$CHANGED" | grep -qE "^packages/(shared|logger)/|^\.github/workflows/|^package\.json$"; then
+            echo "auth-service=true" >> $GITHUB_OUTPUT
+            echo "billing-service=true" >> $GITHUB_OUTPUT
+            echo "email-service=true" >> $GITHUB_OUTPUT
+            echo "analytics-service=true" >> $GITHUB_OUTPUT
+            echo "storage-service=true" >> $GITHUB_OUTPUT
+            echo "admin-service=true" >> $GITHUB_OUTPUT
+            echo "notification-service=true" >> $GITHUB_OUTPUT
+            echo "url-shortener-api=true" >> $GITHUB_OUTPUT
+            echo "url-shortener-web=true" >> $GITHUB_OUTPUT
+            echo "Trigger: shared packages / workflows / root package.json changed"
+            exit 0
+          fi
+
+          # Check each platform service individually
           for DIR in platform/*/; do
             NAME=$(basename "$DIR")
             if echo "$CHANGED" | grep -q "^platform/$NAME/"; then
-              SERVICES="$SERVICES $NAME"
+              echo "$NAME=true" >> $GITHUB_OUTPUT
+              echo "  → $NAME will deploy"
             fi
           done
-          for DIR in products/*/; do
-            NAME=$(basename "$DIR")
-            if echo "$CHANGED" | grep -q "^products/$NAME/"; then
-              SERVICES="$SERVICES product-$NAME"
-            fi
-          done
-          echo "services=$SERVICES" >> $GITHUB_OUTPUT
-          echo "Services to deploy: $SERVICES"
+
+          # Check URL shortener sub-projects
+          if echo "$CHANGED" | grep -q "^products/url-shortener/apps/api/"; then
+            echo "url-shortener-api=true" >> $GITHUB_OUTPUT
+            echo "  → url-shortener-api will deploy"
+          fi
+          if echo "$CHANGED" | grep -q "^products/url-shortener/apps/web/"; then
+            echo "url-shortener-web=true" >> $GITHUB_OUTPUT
+            echo "  → url-shortener-web will deploy"
+          fi
 
   deploy-auth:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'auth-service')
+    if: needs.detect-changes.outputs.auth-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,23 +77,20 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Deploy Auth Service
+      - name: Deploy
         working-directory: platform/auth-service
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify Auth Service
-        id: verify-auth
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://auth.slyxup.online/api/auth/me")
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ auth.slyxup.online is live"; else echo "❌ auth.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ auth.slyxup.online live"; else echo "❌ auth.slyxup.online returned $STATUS"; exit 1; fi
 
   deploy-billing:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'billing-service')
+    if: needs.detect-changes.outputs.billing-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,21 +100,20 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
-      - name: Deploy Billing Service
+      - name: Deploy
         working-directory: platform/billing-service
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify Billing Service
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://billing.slyxup.online/api/billing/plans")
-          if echo "$STATUS" | grep -q "200"; then echo "✅ billing.slyxup.online is live"; else echo "❌ billing.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -q "200"; then echo "✅ billing.slyxup.online live"; else echo "❌ billing.slyxup.online returned $STATUS"; exit 1; fi
 
   deploy-email:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'email-service')
+    if: needs.detect-changes.outputs.email-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -116,23 +128,20 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Deploy Email Service
+      - name: Deploy
         working-directory: platform/email-service
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify Email Service
-        id: verify-email
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://email.slyxup.online/api/email/send" -X POST -H "Content-Type: application/json" -d '{"to":[],"subject":"","html":""}')
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-          if echo "$STATUS" | grep -qE "400|401|200"; then echo "✅ email.slyxup.online is live"; else echo "❌ email.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -qE "400|401|200"; then echo "✅ email.slyxup.online live"; else echo "❌ email.slyxup.online returned $STATUS"; exit 1; fi
 
   deploy-analytics:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'analytics-service')
+    if: needs.detect-changes.outputs.analytics-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -142,21 +151,20 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
-      - name: Deploy Analytics Service
+      - name: Deploy
         working-directory: platform/analytics-service
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify Analytics Service
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://analytics.slyxup.online/api/analytics/summary")
-          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ analytics.slyxup.online is live"; else echo "❌ analytics.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ analytics.slyxup.online live"; else echo "❌ analytics.slyxup.online returned $STATUS"; exit 1; fi
 
   deploy-storage:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'storage-service')
+    if: needs.detect-changes.outputs.storage-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,21 +174,20 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
-      - name: Deploy Storage Service
+      - name: Deploy
         working-directory: platform/storage-service
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify Storage Service
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://storage.slyxup.online/api/storage/list")
-          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ storage.slyxup.online is live"; else echo "❌ storage.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ storage.slyxup.online live"; else echo "❌ storage.slyxup.online returned $STATUS"; exit 1; fi
 
   deploy-admin:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'admin-service')
+    if: needs.detect-changes.outputs.admin-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -190,21 +197,20 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
-      - name: Deploy Admin Service
+      - name: Deploy
         working-directory: platform/admin-service
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify Admin Service
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://admin.slyxup.online/api/admin/dashboard")
-          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ admin.slyxup.online is live"; else echo "❌ admin.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ admin.slyxup.online live"; else echo "❌ admin.slyxup.online returned $STATUS"; exit 1; fi
 
   deploy-notification:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'notification-service')
+    if: needs.detect-changes.outputs.notification-service == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -214,21 +220,20 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
-      - name: Deploy Notification Service
+      - name: Deploy
         working-directory: platform/notification-service
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify Notification Service
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://notification.slyxup.online/api/notification/logs")
-          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ notification.slyxup.online is live"; else echo "❌ notification.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ notification.slyxup.online live"; else echo "❌ notification.slyxup.online returned $STATUS"; exit 1; fi
 
-  deploy-url-shortener:
+  deploy-url-shortener-api:
     needs: detect-changes
-    if: contains(needs.detect-changes.outputs.services, 'product-url-shortener')
+    if: needs.detect-changes.outputs.url-shortener-api == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -238,45 +243,54 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
-
       - name: Set API Key Secret
         run: echo "${{ secrets.API_KEY }}" | npx wrangler secret put API_KEY --name slyxup-url-shortener --force || true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
       - name: Apply D1 Migrations
         working-directory: products/url-shortener/apps/api
         run: npx wrangler d1 migrations apply slyxup-url-shortener --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Deploy URL Shortener API
+      - name: Deploy API
         working-directory: products/url-shortener/apps/api
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify URL Shortener API
+      - name: Verify API
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://api-url.slyxup.online/api/url")
-          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ api-url.slyxup.online is live"; else echo "❌ api-url.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -qE "401|200"; then echo "✅ api-url.slyxup.online live"; else echo "❌ api-url.slyxup.online returned $STATUS"; exit 1; fi
 
-      - name: Build & Deploy URL Shortener Web
+  deploy-url-shortener-web:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.url-shortener-web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - name: Build
         working-directory: products/url-shortener/apps/web
-        run: |
-          pnpm vite build
-          pnpm wrangler pages deploy dist --project-name slyxup-url-shortener-web
+        run: pnpm vite build
+      - name: Deploy to Pages
+        continue-on-error: true
+        working-directory: products/url-shortener/apps/web
+        run: pnpm wrangler pages deploy dist --project-name slyxup-url-shortener-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Verify URL Shortener Web
+      - name: Verify
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://url.slyxup.online")
-          if echo "$STATUS" | grep -q "200"; then echo "✅ url.slyxup.online is live"; else echo "❌ url.slyxup.online returned $STATUS"; fi
+          if echo "$STATUS" | grep -q "200"; then echo "✅ url.slyxup.online live"; else echo "❌ url.slyxup.online returned $STATUS"; fi
 
   summary:
     if: always()
@@ -289,30 +303,22 @@ jobs:
       - deploy-storage
       - deploy-admin
       - deploy-notification
-      - deploy-url-shortener
+      - deploy-url-shortener-api
+      - deploy-url-shortener-web
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          echo "SERVICES=${{ needs.detect-changes.outputs.services }}"
       - name: Deploy Summary
         run: |
           echo "═══════════════════════════════════════════════════════════"
-          echo "              Deploy Platform Services — Summary"
+          echo "         Deploy Platform Services — Summary"
           echo "═══════════════════════════════════════════════════════════"
-          echo "  Auth:        ${{ needs.deploy-auth.result        || 'skipped' }}"
-          echo "  Billing:     ${{ needs.deploy-billing.result     || 'skipped' }}"
-          echo "  Email:       ${{ needs.deploy-email.result       || 'skipped' }}"
-          echo "  Analytics:   ${{ needs.deploy-analytics.result   || 'skipped' }}"
-          echo "  Storage:     ${{ needs.deploy-storage.result     || 'skipped' }}"
-          echo "  Admin:       ${{ needs.deploy-admin.result       || 'skipped' }}"
-          echo "  Notification:${{ needs.deploy-notification.result || 'skipped' }}"
-          echo "  URL Shortener:${{ needs.deploy-url-shortener.result || 'skipped' }}"
-          echo "═══════════════════════════════════════════════════════════"
-          if [[ "${{ needs.deploy-url-shortener.result }}" == "success" ]]; then
-            echo "  ✅ All services deployed successfully!"
-          elif [[ "${{ needs.deploy-url-shortener.result }}" == "skipped" ]]; then
-            echo "  ℹ️  No code changes detected — nothing to deploy"
-          else
-            echo "  ⚠️  Some services failed — check logs above"
-          fi
+          echo "  Auth:              ${{ needs.deploy-auth.result              || 'skipped' }}"
+          echo "  Billing:           ${{ needs.deploy-billing.result           || 'skipped' }}"
+          echo "  Email:             ${{ needs.deploy-email.result             || 'skipped' }}"
+          echo "  Analytics:         ${{ needs.deploy-analytics.result         || 'skipped' }}"
+          echo "  Storage:           ${{ needs.deploy-storage.result           || 'skipped' }}"
+          echo "  Admin:             ${{ needs.deploy-admin.result             || 'skipped' }}"
+          echo "  Notification:      ${{ needs.deploy-notification.result      || 'skipped' }}"
+          echo "  URL Shortener API: ${{ needs.deploy-url-shortener-api.result || 'skipped' }}"
+          echo "  URL Shortener Web: ${{ needs.deploy-url-shortener-web.result || 'skipped' }}"
           echo "═══════════════════════════════════════════════════════════"

@@ -5,7 +5,7 @@ import { AUTH_BASE } from "../config";
 const api = createSlyxupClient({ authBaseUrl: AUTH_BASE });
 
 export function VerifyEmail({ email }: { email?: string }) {
-  const [status, setStatus] = useState<"sending" | "resent" | "verified" | "error">("sending");
+  const [status, setStatus] = useState<"idle" | "sending" | "resent" | "verified" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
@@ -14,7 +14,6 @@ export function VerifyEmail({ email }: { email?: string }) {
     if (token) {
       api.auth.verifyEmail(token).then(() => {
         setStatus("verified");
-        setTimeout(() => { window.location.href = "/dashboard"; }, 2000);
       }).catch((err) => {
         setStatus("error");
         setErrorMsg(err.message || "Invalid or expired token");
@@ -32,7 +31,9 @@ export function VerifyEmail({ email }: { email?: string }) {
             </svg>
           </div>
           <h1 className="text-xl font-bold text-green-400 mt-3">Email Verified!</h1>
-          <p className="text-zinc-400 text-sm mt-1">Redirecting to dashboard...</p>
+          <p className="text-zinc-400 text-sm mt-1">Your email has been verified successfully.</p>
+          <a href="/login" onClick={(e) => { e.preventDefault(); window.history.pushState({}, "", "/login"); window.dispatchEvent(new Event("popstate")); }}
+            className="inline-block mt-4 px-6 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-500 transition-colors">Sign in</a>
         </div>
       </div>
     );
@@ -84,13 +85,19 @@ export function VerifyEmail({ email }: { email?: string }) {
             We sent a verification link to <span className="text-zinc-200 font-medium">{email}</span>.
           </p>
         )}
+        {status === "resent" && (
+          <p className="text-green-400 text-xs mt-2">Verification email resent!</p>
+        )}
+        {status === "error" && (
+          <p className="text-red-400 text-xs mt-2">{errorMsg || "Failed to resend"}</p>
+        )}
         <p className="text-zinc-500 text-xs mt-3">Didn't get the email?</p>
         <button
           className="mt-2 px-4 py-2 rounded-lg bg-zinc-800 text-zinc-300 text-sm hover:bg-zinc-700 disabled:opacity-50 transition-colors"
           onClick={resendEmail}
           disabled={status === "sending"}
         >
-          {status === "sending" ? "Sending..." : status === "resent" ? "Resent!" : "Resend"}
+          {status === "sending" ? "Sending..." : "Resend"}
         </button>
         <div className="mt-4">
           <a href="/login" onClick={(e) => { e.preventDefault(); window.history.pushState({}, "", "/login"); window.dispatchEvent(new Event("popstate")); }}

@@ -31,6 +31,9 @@ setupOpenApi(app, {
 });
 
 app.get("/api/email/docs", swaggerUI({ url: "/api/email/openapi.json" }));
+
+app.get("/health", (c) => c.json({ status: "ok", service: "email" }));
+
 app.notFound((c) => {
   logger.warn("not_found", { path: c.req.path, method: c.req.method });
   return c.json({ success: false, error: "Not found" }, 404);

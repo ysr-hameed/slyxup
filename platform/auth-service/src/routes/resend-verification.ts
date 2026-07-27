@@ -4,6 +4,7 @@ import { apiResponseSchema, generateToken } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
+import { verificationEmailHtml } from "../email";
 import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
@@ -36,14 +37,14 @@ route.openapi(routeDef, async (c) => {
     updatedAt: new Date().toISOString(),
   }).where(eq(schema.users.id, user.id)).run();
 
-  const verifyLink = `${c.env.APP_DOMAIN}/verify?token=${verificationToken}`;
+  const verifyLink = `${c.env.APP_DOMAIN}/verify-email?token=${verificationToken}`;
   fetch(`${c.env.EMAIL_SERVICE_URL}/api/email/send`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": c.env.API_KEY },
     body: JSON.stringify({
       to: [user.email],
       subject: "Verify your email - SlyxUp",
-      html: `<p>Click <a href="${verifyLink}">here</a> to verify your email address.</p>`,
+      html: verificationEmailHtml(verifyLink),
     }),
   }).catch(() => {});
 

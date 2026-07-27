@@ -21,132 +21,161 @@ PRODUCTS=(
 
 ALL_ENTRIES=("${SERVICES[@]}" "${PRODUCTS[@]}")
 
-cmd="${1:-help}"
-shift || true
+declare -A DEPS
+DEPS[auth-service]="email-service"
+DEPS[url-shortener]="auth-service"
+DEPS[url-shortener-web]="auth-service billing-service email-service analytics-service storage-service admin-service notification-service url-shortener"
+
+declare -A REQ_VARS
+REQ_VARS[auth-service]="JWT_SECRET ENVIRONMENT API_KEY EMAIL_SERVICE_URL"
+REQ_VARS[billing-service]="ENVIRONMENT"
+REQ_VARS[email-service]="BREVO_API_KEY FROM_EMAIL SUPPORT_EMAIL ENVIRONMENT API_KEY"
+REQ_VARS[analytics-service]="ENVIRONMENT"
+REQ_VARS[storage-service]="ENVIRONMENT"
+REQ_VARS[admin-service]="ENVIRONMENT"
+REQ_VARS[notification-service]="ENVIRONMENT"
+REQ_VARS[url-shortener]="JWT_SECRET ENVIRONMENT API_KEY AUTH_SERVICE_URL BILLING_SERVICE_URL ANALYTICS_SERVICE_URL"
+
+declare -A DB
+DB[auth-service]="slyxup-auth"
+DB[billing-service]="slyxup-billing"
+DB[analytics-service]="slyxup-analytics"
+DB[admin-service]="slyxup-admin"
+DB[notification-service]="slyxup-notification"
+DB[url-shortener]="slyxup-url-shortener"
+
+# ── Helpers ──
 
 box() { printf "║  %-47s  ║\n" "$*"; }
 
-get_pid() {
-  lsof -ti :"$1" 2>/dev/null || true
+get_entry() {
+  for entry in "${ALL_ENTRIES[@]}"; do
+    if [ "${entry%%:*}" = "$1" ]; then echo "$entry"; return 0; fi
+  done
+  return 1
 }
 
-wrangler_pids() {
-  local port="$1"
-  pgrep -f "cli.js dev.*--port $port" 2>/dev/null || true
+get_port() {
+  local e r; e=$(get_entry "$1") || return 1; r="${e#*:}"; echo "${r%%:*}"
 }
 
-workerd_pids() {
-  local port="$1"
-  pgrep -f "workerd.*localhost:$port" 2>/dev/null || true
+get_dir() {
+  local e r r2; e=$(get_entry "$1") || return 1; r="${e#*:}"; r2="${r#*:}"; echo "${r2%%:*}"
 }
 
-kill_all_on_port() {
-  local port="$1"
-  local name="$2"
+get_runner() {
+  local e r r2 rnr; e=$(get_entry "$1") || return 1; r="${e#*:}"; r2="${r#*:}"; rnr="${r2##*:}"
+  [ "$rnr" = "${r2%%:*}" ] && echo "wrangler" || echo "$rnr"
+}
 
-  local pids
-  pids="$(get_pid "$port")"
-  local w_pids
-  w_pids="$(wrangler_pids "$port" 2>/dev/null || true)"
-  local wd_pids
-  wd_pids="$(workerd_pids "$port" 2>/dev/null || true)"
+get_pid()    { lsof -ti :"$1" 2>/dev/null | tr '\n' ' ' || true; }
+cli_pids()   { pgrep -f "cli.js dev.*--port $1" 2>/dev/null || true; }
+workerd_pids() { pgrep -f "workerd.*localhost:$1" 2>/dev/null || true; }
 
-  kill $pids $w_pids $wd_pids 2>/dev/null || true
+kill_port() {
+  local port="$1" name="$2"
+  kill $(get_pid "$port") $(cli_pids "$port") $(workerd_pids "$port") 2>/dev/null || true
   sleep 1
-
-  pids="$(get_pid "$port")"
-  w_pids="$(wrangler_pids "$port" 2>/dev/null || true)"
-  wd_pids="$(workerd_pids "$port" 2>/dev/null || true)"
-  kill -9 $pids $w_pids $wd_pids 2>/dev/null || true
-
+  kill -9 $(get_pid "$port") $(cli_pids "$port") $(workerd_pids "$port") 2>/dev/null || true
   rm -f "$LOGS/$name.pid" 2>/dev/null || true
 }
 
+wait_health() {
+  local port="$1" name="$2" max="${3:-30}" i
+  for i in $(seq 1 "$max"); do
+    if curl -sf "http://localhost:$port/health" >/dev/null 2>&1; then return 0; fi
+    sleep 1
+  done
+  return 1
+}
+
+get_level() {
+  local name="$1" max_dep=0 dep_level dep
+  for dep in ${DEPS[$name]:-}; do
+    dep_level=$(get_level "$dep")
+    [ "$dep_level" -ge "$max_dep" ] && max_dep=$((dep_level + 1))
+  done
+  echo "$max_dep"
+}
+
+assign_levels() {
+  local name
+  for name in "$@"; do get_level "$name"; done
+}
+
+resolve_deps() {
+  local name="$1" result="$2" dep
+  for dep in ${DEPS[$name]:-}; do
+    if [[ " $result " != *" $dep "* ]]; then
+      result="$result $dep"
+      result="$(resolve_deps "$dep" "$result")"
+    fi
+  done
+  echo "$result"
+}
+
 status_icon() {
-  local port="$1"
-  local pid
+  local port="$1" name="$2" pid elapsed started diff healthy
   pid=$(get_pid "$port")
   if [ -n "$pid" ]; then
-    local elapsed
-    if [ -f "$LOGS/$2.pid" ]; then
-      local started
-      started=$(stat -c %Y "$LOGS/$2.pid" 2>/dev/null || echo 0)
-      local now
-      now=$(date +%s)
-      local diff=$((now - started))
-      if [ $diff -lt 60 ]; then
-        elapsed="${diff}s"
-      elif [ $diff -lt 3600 ]; then
-        elapsed="$((diff / 60))m"
-      else
-        elapsed="$((diff / 3600))h"
+    elapsed="?"
+    if [ -f "$LOGS/$name.pid" ]; then
+      started=$(stat -c %Y "$LOGS/$name.pid" 2>/dev/null || echo 0)
+      diff=$(($(date +%s) - started))
+      if [ "$diff" -lt 60 ]; then elapsed="${diff}s"
+      elif [ "$diff" -lt 3600 ]; then elapsed="$((diff / 60))m"
+      else elapsed="$((diff / 3600))h"
       fi
-    else
-      elapsed="?"
     fi
-    printf "\033[32m✓\033[0m  \033[1m%-20s\033[0m \033[90mhttp://localhost:%-5s\033[0m  \033[90mPID %-6s\033[0m \033[90m(up %s)\033[0m" "$2" "$port" "$pid" "$elapsed"
+    healthy="?"
+    curl -sf "http://localhost:$port/health" >/dev/null 2>&1 && healthy="ok"
+    printf "\033[32m✓\033[0m  \033[1m%-20s\033[0m \033[90mhttp://localhost:%-5s\033[0m  \033[90mPID %-6s\033[0m  \033[90m%-4s\033[0m  \033[90m(%s)\033[0m" "$name" "$port" "$pid" "$healthy" "$elapsed"
   else
-    printf "\033[31m✗\033[0m  %-20s \033[90mhttp://localhost:%-5s\033[0m  \033[90m%-14s\033[0m" "$2" "$port" "stopped"
+    printf "\033[31m✗\033[0m  %-20s \033[90mhttp://localhost:%-5s\033[0m" "$name" "$port"
   fi
 }
 
 show_status() {
-  local header="$1"
+  local header="$1" entry name rest port
   shift
-  printf "╔═══════════════════════════════════════════════════════════════════════╗\n"
+  printf "╔══════════════════════════════════════════════════════════════════════════════╗\n"
   box "$header"
-  printf "╠═══════════════════════════════════════════════════════════════════════╣\n"
+  printf "╠══════════════════════════════════════════════════════════════════════════════╣\n"
   for entry in "$@"; do
-    local name="${entry%%:*}"
-    local rest="${entry#*:}"
-    local port="${rest%%:*}"
+    name="${entry%%:*}"
+    rest="${entry#*:}"
+    port="${rest%%:*}"
     printf "║  "
     status_icon "$port" "$name"
     printf "  ║\n"
   done
-  printf "╚═══════════════════════════════════════════════════════════════════════╝\n"
+  printf "╚══════════════════════════════════════════════════════════════════════════════╝\n"
 }
 
 start_entry() {
-  local entry="$1"
-  local name="${entry%%:*}"
-  local rest="${entry#*:}"
-  local port="${rest%%:*}"
-  local rest2="${rest#*:}"
-  local dir="${rest2%%:*}"
-  local runner="${rest2##*:}"
-  if [ "$runner" = "$dir" ]; then runner="wrangler"; fi
-
-  mkdir -p "$LOGS"
+  local name="$1" port dir runner pid orphans wd full
+  port=$(get_port "$name")
+  dir=$(get_dir "$name")
+  runner=$(get_runner "$name")
 
   pid=$(get_pid "$port")
-  if [ -n "$pid" ]; then
-    echo "  $name already running (PID $pid, port $port)"
-    return
-  fi
+  [ -n "$pid" ] && echo "  $name already running (PID $pid)" && return 0
 
-  local orphans
-  orphans="$(wrangler_pids "$port" 2>/dev/null || true)"
-  local work_orphans
-  work_orphans="$(workerd_pids "$port" 2>/dev/null || true)"
-  if [ -n "$orphans" ] || [ -n "$work_orphans" ]; then
-    kill $orphans $work_orphans 2>/dev/null || true
+  orphans=$(cli_pids "$port" 2>/dev/null || true)
+  wd=$(workerd_pids "$port" 2>/dev/null || true)
+  if [ -n "$orphans" ] || [ -n "$wd" ]; then
+    kill $orphans $wd 2>/dev/null || true; sleep 1
+    orphans=$(cli_pids "$port" 2>/dev/null || true)
+    wd=$(workerd_pids "$port" 2>/dev/null || true)
+    [ -n "$orphans" ] || [ -n "$wd" ] && kill -9 $orphans $wd 2>/dev/null || true
     sleep 1
-    orphans="$(wrangler_pids "$port" 2>/dev/null || true)"
-    work_orphans="$(workerd_pids "$port" 2>/dev/null || true)"
-    if [ -n "$orphans" ] || [ -n "$work_orphans" ]; then
-      kill -9 $orphans $work_orphans 2>/dev/null || true
-      sleep 1
-    fi
   fi
 
   full="$ROOT/$dir"
-  if [ ! -d "$full" ]; then
-    echo "  $name directory not found, skipping"
-    return
-  fi
+  [ ! -d "$full" ] && echo "  $name directory not found, skipping" && return 1
 
-  echo "=== $name (:${port}) ==="
+  mkdir -p "$LOGS"
+  echo "  Starting $name (:${port})..."
   cd "$full"
   if [ "$runner" = "vite" ]; then
     nohup npx vite --port "$port" --host > "$LOGS/$name.log" 2>&1 &
@@ -154,74 +183,114 @@ start_entry() {
     nohup npx wrangler dev --port "$port" > "$LOGS/$name.log" 2>&1 &
   fi
   echo $! > "$LOGS/$name.pid"
-
-  for i in $(seq 1 15); do
-    if get_pid "$port" >/dev/null 2>&1; then
-      sleep 1
-      break
-    fi
-    sleep 1
-  done
 }
 
-stop_by_port() {
-  local port="$1"
-  local name="$2"
-  kill_all_on_port "$port" "$name"
-  echo "  Stopped $name (port $port)"
+start_wave() {
+  local name port pid failed
+  for name in "$@"; do
+    port=$(get_port "$name")
+    pid=$(get_pid "$port") || true
+    [ -z "$pid" ] && start_entry "$name"
+  done
+  failed=0
+  for name in "$@"; do
+    port=$(get_port "$name")
+    echo "  Waiting for $name..."
+    if wait_health "$port" "$name" 30; then
+      echo "  ✓ $name healthy"
+    else
+      echo "  ✗ $name FAILED"
+      [ -f "$LOGS/$name.log" ] && echo "  --- last 15 lines ---" && tail -15 "$LOGS/$name.log" | sed 's/^/    /'
+      failed=1
+    fi
+  done
+  return $failed
+}
+
+stop_entry() {
+  local name="$1" port
+  port=$(get_port "$name")
+  kill_port "$port" "$name"
+  echo "  Stopped $name"
 }
 
 stop_all() {
+  local entry name rest port
   for entry in "${ALL_ENTRIES[@]}"; do
-    local name="${entry%%:*}"
-    local rest="${entry#*:}"
-    local port="${rest%%:*}"
-    kill_all_on_port "$port" "$name"
+    name="${entry%%:*}"
+    rest="${entry#*:}"
+    port="${rest%%:*}"
+    kill_port "$port" "$name"
   done
-
   pkill -f "workerd.*serve" 2>/dev/null || true
   pkill -f "vite" 2>/dev/null || true
   sleep 1
   pkill -9 -f "workerd.*serve" 2>/dev/null || true
   pkill -9 -f "vite" 2>/dev/null || true
-
   echo "All services stopped"
 }
+
+cmd="${1:-help}"
+shift || true
 
 case "$cmd" in
   start)
     scope="${1:-core}"
     shift || true
-    mkdir -p "$LOGS"
 
     case "$scope" in
       core|all)
-        for entry in "${SERVICES[@]}"; do start_entry "$entry"; done
+        names=()
+        for entry in "${SERVICES[@]}"; do names+=("${entry%%:*}"); done
+        [ "$scope" = "all" ] && for entry in "${PRODUCTS[@]}"; do names+=("${entry%%:*}"); done
+
+        declare -A lvls
+        max_lvl=0
+        for name in "${names[@]}"; do
+          lvls[$name]=$(get_level "$name")
+          [ "${lvls[$name]}" -gt "$max_lvl" ] && max_lvl=${lvls[$name]}
+        done
+
+        failed=0
+        for lvl in $(seq 0 "$max_lvl"); do
+          wave=()
+          for name in "${names[@]}"; do
+            [ "${lvls[$name]}" -eq "$lvl" ] && wave+=("$name")
+          done
+          [ "${#wave[@]}" -eq 0 ] && continue
+          echo ""
+          echo "── Level $lvl ──"
+          start_wave "${wave[@]}" || failed=1
+        done
+        echo ""
+        show_status "Service Status" "${ALL_ENTRIES[@]}"
+        [ "$failed" -eq 1 ] && echo "⚠ Some services failed to start. Check logs above." && exit 1
+        ;;
+      *)
+        deps=$(resolve_deps "$scope" "")
+        order=()
+        for d in $deps; do order+=("$d"); done
+        order+=("$scope")
+
+        failed=0
+        for name in "${order[@]}"; do
+          port=$(get_port "$name")
+          pid=$(get_pid "$port") || true
+          [ -n "$pid" ] && echo "  $name already running" && continue
+          start_entry "$name"
+          echo "  Waiting for $name..."
+          wait_health "$port" "$name" 30 && echo "  ✓ $name healthy" || { echo "  ✗ $name FAILED"; failed=1; }
+        done
+        echo ""
+        show_status "Running Services" "${ALL_ENTRIES[@]}"
+        [ "$failed" -eq 1 ] && echo "⚠ Some services failed" && exit 1
         ;;
     esac
-
-    case "$scope" in
-      product|products|all)
-        for entry in "${PRODUCTS[@]}"; do start_entry "$entry"; done
-        ;;
-    esac
-
-    for entry in "${ALL_ENTRIES[@]}"; do
-      name="${entry%%:*}"
-      if [ "$scope" = "$name" ]; then
-        start_entry "$entry"
-      fi
-    done
-
-    echo ""
-    show_status "Running Services" "${ALL_ENTRIES[@]}"
-    echo "Logs: ./start.sh logs <name>"
     ;;
 
   stop)
     scope="${1:-all}"
     shift || true
-
     if [ "$scope" = "all" ]; then
       stop_all
     else
@@ -230,7 +299,7 @@ case "$cmd" in
         rest="${entry#*:}"
         port="${rest%%:*}"
         if [ "$scope" = "$name" ] || [ "$scope" = "$port" ]; then
-          stop_by_port "$port" "$name"
+          stop_entry "$name"
         fi
       done
     fi
@@ -239,32 +308,28 @@ case "$cmd" in
   restart)
     scope="${1:-all}"
     shift || true
-
     echo "=== Restarting $scope ==="
     if [ "$scope" = "all" ]; then
       stop_all
       sleep 1
-      for entry in "${SERVICES[@]}"; do start_entry "$entry"; done
-      for entry in "${PRODUCTS[@]}"; do start_entry "$entry"; done
+      "$0" start all
     else
+      port=$(get_port "$scope" 2>/dev/null) || port="$scope"
+      name=""
       for entry in "${ALL_ENTRIES[@]}"; do
-        name="${entry%%:*}"
-        rest="${entry#*:}"
-        port="${rest%%:*}"
-        if [ "$scope" = "$name" ] || [ "$scope" = "$port" ]; then
-          stop_by_port "$port" "$name"
-          sleep 1
-          start_entry "$entry"
-        fi
+        n="${entry%%:*}"; r="${entry#*:}"; p="${r%%:*}"
+        [ "$scope" = "$n" ] || [ "$scope" = "$p" ] && name="$n"
       done
+      [ -z "$name" ] && echo "Unknown service: $scope" && exit 1
+      stop_entry "$name"
+      sleep 1
+      "$0" start "$name"
     fi
-    echo ""
-    show_status "Restarted Services" "${ALL_ENTRIES[@]}"
     ;;
 
   status)
     echo ""
-    if [ -n "$(ls "$LOGS"/*.pid 2>/dev/null)" ]; then
+    if ls "$LOGS"/*.pid >/dev/null 2>&1; then
       show_status "Service Status" "${ALL_ENTRIES[@]}"
     else
       show_status "All Services Stopped" "${ALL_ENTRIES[@]}"
@@ -275,15 +340,96 @@ case "$cmd" in
     name="${1:-auth}"
     logfile="$LOGS/$name.log"
     if [ ! -f "$logfile" ]; then
-      echo "No log file for '$name'. Available:"
-      ls "$LOGS/" 2>/dev/null || echo "  (no logs yet)"
+      echo "No log for '$name'. Available:"
+      ls "$LOGS/" 2>/dev/null || echo "  (none)"
       exit 1
     fi
     tail -f "$logfile"
     ;;
 
+  check)
+    echo "=== Pre-flight Checks ==="
+    errors=0
+
+    echo ""
+    echo "── .dev.vars ──"
+    for entry in "${SERVICES[@]}"; do
+      name="${entry%%:*}"; dir=$(get_dir "$name")
+      vars="$ROOT/$dir/.dev.vars"
+      if [ ! -f "$vars" ]; then
+        echo "  ✗ $name: missing .dev.vars"
+        errors=1
+      else
+        echo "  ✓ $name: .dev.vars exists"
+      fi
+    done
+    for entry in "${PRODUCTS[@]}"; do
+      name="${entry%%:*}"; dir=$(get_dir "$name")
+      [ "$name" = "url-shortener-web" ] && continue
+      vars="$ROOT/$dir/.dev.vars"
+      if [ ! -f "$vars" ]; then
+        echo "  ✗ $name: missing .dev.vars"
+        errors=1
+      else
+        echo "  ✓ $name: .dev.vars exists"
+      fi
+    done
+
+    echo ""
+    echo "── Required env vars ──"
+    for service in "${!REQ_VARS[@]}"; do
+      dir=$(get_dir "$service" 2>/dev/null) || continue
+      vars="$ROOT/$dir/.dev.vars"
+      [ ! -f "$vars" ] && continue
+      missing=()
+      for var in ${REQ_VARS[$service]}; do
+        grep -q "^${var}=" "$vars" 2>/dev/null || missing+=("$var")
+      done
+      if [ "${#missing[@]}" -gt 0 ]; then
+        echo "  ✗ $service: missing ${missing[*]}"
+        errors=1
+      else
+        echo "  ✓ $service: all vars present"
+      fi
+    done
+
+    echo ""
+    echo "── Port conflicts ──"
+    for entry in "${ALL_ENTRIES[@]}"; do
+      name="${entry%%:*}"; rest="${entry#*:}"; port="${rest%%:*}"
+      pid=$(get_pid "$port")
+      if [ -n "$pid" ]; then
+        proc=$(ps -p "$pid" -o comm= 2>/dev/null || echo "unknown")
+        echo "  ? $name: port $port in use by PID $pid ($proc)"
+      else
+        echo "  ✓ $name: port $port free"
+      fi
+    done
+
+    echo ""
+    echo "── DB migrations ──"
+    for service in "${!DB[@]}"; do
+      dir=$(get_dir "$service" 2>/dev/null) || continue
+      mig_dir="$ROOT/$dir/migrations"
+      if [ -d "$mig_dir" ]; then
+        count=$(ls "$mig_dir"/*.sql 2>/dev/null | wc -l)
+        echo "  ✓ $service ($count migration files)"
+      else
+        echo "  - $service: no migrations directory (might not need one)"
+      fi
+    done
+
+    echo ""
+    if [ "$errors" -eq 1 ]; then
+      echo "⚠ Issues found"
+      exit 1
+    else
+      echo "✅ All checks passed"
+    fi
+    ;;
+
   cleanup)
-    echo "=== Force-cleaning all wrangler, workerd, and vite processes ==="
+    echo "=== Force-killing all wrangler, workerd, and vite processes ==="
     pkill -9 -f "workerd" 2>/dev/null || true
     pkill -9 -f "wrangler" 2>/dev/null || true
     pkill -9 -f "vite" 2>/dev/null || true
@@ -296,31 +442,26 @@ case "$cmd" in
     echo "Usage: ./start.sh <command> [args]"
     echo ""
     echo "Commands:"
-    echo "  start [scope]    Start services"
+    echo "  start [scope]    Start services (dependency-aware, health-checked)"
     echo "    Scopes:"
-    echo "      core               Platform (auth:8000 → notification:8006)"
-    echo "      product            Products (url-shortener:9000, web:5173)"
-    echo "      all                Both core + products"
-    echo "      <name>             Start by name (e.g. auth-service, url-shortener)"
+    echo "      core               Platform services only (auth → notification)"
+    echo "      all                Core + products"
+    echo "      <name>             Service + its deps (e.g., auth, url-shortener)"
     echo ""
-    echo "  stop [scope]     Stop services"
-    echo "    Scopes: all, <name>, or <port>"
-    echo ""
-    echo "  restart [scope]  Stop then start again"
-    echo "    Scopes: all (default), <name>, or <port>"
-    echo ""
-    echo "  status           Show running services (port, PID, uptime)"
-    echo "  cleanup          Force-kill all wrangler/vite processes (zombie cleanup)"
-    echo "  logs [name]      Tail logs (default: auth)"
+    echo "  stop [scope]     Stop services (all, name, or port)"
+    echo "  restart [scope]  Stop + start"
+    echo "  status           Show running services (port, PID, health, uptime)"
+    echo "  logs [name]      Tail logs (default: auth-service)"
+    echo "  cleanup          Force-kill all wrangler/vite/workerd processes"
+    echo "  check            Validate .dev.vars, ports, migrations"
     echo ""
     echo "Examples:"
-    echo "  ./start.sh start core              # Platform services"
-    echo "  ./start.sh start all               # Everything"
-    echo "  ./start.sh start url-shortener-web # Frontend only"
-    echo "  ./start.sh status                  # Show URLs + status"
-    echo "  ./start.sh restart billing-service # Restart billing"
-    echo "  ./start.sh restart all             # Restart everything"
-    echo "  ./start.sh stop 5173               # Stop frontend"
+    echo "  ./start.sh start core              # Start all platform services"
+    echo "  ./start.sh start url-shortener     # Start auth → url-shortener"
+    echo "  ./start.sh start auth              # Start email → auth"
+    echo "  ./start.sh start all               # Every service"
+    echo "  ./start.sh check                   # Pre-flight check"
+    echo "  ./start.sh status                  # Show health dashboard"
+    echo "  ./start.sh logs auth-service       # Watch auth logs"
     ;;
-
 esac

@@ -62,6 +62,8 @@ app.onError(createHonoErrorHandler());
 
 app.notFound((c) => c.json({ success: false, error: "Not found" }, 404));
 
+app.get("/health", (c) => c.json({ status: "ok", service: "url-shortener" }));
+
 app.post("/api/url", async (c) => {
   const user = await getUser(c);
   if (!user) return c.json({ success: false, error: "Unauthorized" }, 401);
