@@ -35,6 +35,13 @@ route.openapi(routeDef, async (c) => {
     return c.json({ success: false, error: "Invalid or expired session" }, 401);
   }
 
+  // Idle timeout: auto-revoke if inactive for 7 days
+  if (session.lastSeen && (Date.now() - new Date(session.lastSeen).getTime()) > 7 * 86400000) {
+    await db.update(schema.sessions).set({ revokedAt: new Date().toISOString() })
+      .where(eq(schema.sessions.id, session.id)).run();
+    return c.json({ success: false, error: "Session expired due to inactivity" }, 401);
+  }
+
   const user = await db.select().from(schema.users).where(eq(schema.users.id, session.userId)).get();
   if (!user || user.blocked || user.deletedAt) {
     return c.json({ success: false, error: "User account unavailable" }, 401);

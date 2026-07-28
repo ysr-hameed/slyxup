@@ -5,6 +5,7 @@ import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -35,6 +36,7 @@ route.openapi(routeDef, async (c) => {
   await db.update(schema.users).set({ deletedAt: now, updatedAt: now }).where(eq(schema.users.id, payload.sub)).run();
   await db.update(schema.sessions).set({ revokedAt: now }).where(eq(schema.sessions.userId, payload.sub)).run();
 
+  logAudit(c, "account_deleted", payload.sub);
   logger.info("account_deleted", { userId: payload.sub });
 
   return c.json({ success: true, data: { message: "Account deleted successfully" } });

@@ -5,6 +5,7 @@ import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -54,6 +55,7 @@ route.openapi(routeDef, async (c) => {
 
   await db.update(schema.users).set(updates).where(eq(schema.users.id, user.id)).run();
 
+  logAudit(c, "profile_updated", user.id);
   logger.info("profile_updated", { userId: user.id });
 
   return c.json({

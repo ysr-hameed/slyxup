@@ -5,6 +5,7 @@ import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -48,12 +49,15 @@ route.openapi(routeDef, async (c) => {
       subject: "Password Reset - SlyxUp",
       html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link expires in 1 hour.</p>`,
     }),
-  }).catch(() => {});
+  }).catch((err) => {
+    logger.error("email_send_failed", { error: String(err), to: user.email, type: "password_reset" });
+  });
 
   if (c.env.ENVIRONMENT === "development") {
     logger.info("dev_reset_link", { resetLink });
   }
 
+  logAudit(c, "password_reset_requested", user.id);
   logger.info("password_reset_requested", { userId: user.id, email: user.email });
 
   return c.json({ success: true, data: { message: "If an account with that email exists, a reset link has been sent." } });

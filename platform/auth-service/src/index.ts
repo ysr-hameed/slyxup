@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import type { AuthEnv } from "@slyxup/shared";
-import { setupOpenApi, corsOrigin, applyDefaultRateLimit } from "@slyxup/shared";
+import { setupOpenApi, corsOrigin } from "@slyxup/shared";
 import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import register from "./routes/register";
 import login from "./routes/login";
@@ -21,6 +21,8 @@ import changePassword from "./routes/change-password";
 import updateProfile from "./routes/update-profile";
 import resendVerification from "./routes/resend-verification";
 import deleteAccount from "./routes/delete-account";
+import admin from "./routes/admin";
+import { d1RateLimit } from "./middleware/rate-limit";
 
 const app = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -28,7 +30,12 @@ app.use("*", honoLogger());
 app.use("*", cors({ origin: corsOrigin, allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Platform", "X-Admin-Key"] }));
 app.onError(createHonoErrorHandler());
 
-app.use("*", applyDefaultRateLimit);
+// Stricter rate limit for auth endpoints (20 req/min)
+app.use("/api/auth/login", d1RateLimit({ max: 20, window: 60000 }));
+app.use("/api/auth/register", d1RateLimit({ max: 10, window: 60000 }));
+app.use("/api/auth/forgot-password", d1RateLimit({ max: 5, window: 60000 }));
+app.use("/api/auth/resend-verification", d1RateLimit({ max: 5, window: 60000 }));
+app.use("/api/auth/*", d1RateLimit({ max: 60, window: 60000 }));
 
 app.use("*", async (c, next) => {
   const start = Date.now();
@@ -52,6 +59,7 @@ app.route("/api/auth", changePassword);
 app.route("/api/auth", updateProfile);
 app.route("/api/auth", resendVerification);
 app.route("/api/auth", deleteAccount);
+app.route("/api/auth", admin);
 
 setupOpenApi(app, {
   title: "Slyxup Auth API",

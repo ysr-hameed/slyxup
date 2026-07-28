@@ -4,6 +4,7 @@ import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -33,6 +34,7 @@ route.openapi(routeDef, async (c) => {
   await db.update(schema.sessions).set({ revokedAt: new Date().toISOString() })
     .where(eq(schema.sessions.id, session.id)).run();
 
+  logAudit(c, "user_logout", session.userId);
   logger.info("user_logout", { userId: session.userId });
   return c.json({ success: true, data: { message: "Logged out successfully" } });
 });

@@ -5,6 +5,7 @@ import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -48,6 +49,7 @@ route.openapi(routeDef, async (c) => {
   const newHash = await hashPassword(newPassword);
   await db.update(schema.users).set({ passwordHash: newHash, updatedAt: new Date().toISOString() }).where(eq(schema.users.id, user.id)).run();
 
+  logAudit(c, "password_changed", user.id);
   logger.info("password_changed", { userId: user.id });
 
   return c.json({ success: true, data: { message: "Password changed successfully" } });

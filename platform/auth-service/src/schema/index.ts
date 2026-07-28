@@ -56,3 +56,29 @@ export const platformMemberships = sqliteTable("platform_memberships", {
   role: text("role").notNull().default("member"),
   createdAt: text("created_at").notNull(),
 });
+
+export const rateLimits = sqliteTable("rate_limits", {
+  ip: text("ip").notNull(),
+  route: text("route").notNull(),
+  count: integer("count").notNull().default(1),
+  windowStart: text("window_start").notNull(),
+});
+
+export const authAuditLogs = sqliteTable("audit_logs", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  action: text("action").notNull(),
+  details: text("details"),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const oauthStates = sqliteTable("oauth_states", {
+  id: text("id").primaryKey(),
+  state: text("state").notNull().unique(),
+  provider: text("provider").notNull(),
+  redirectTo: text("redirect_to"),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+});

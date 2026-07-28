@@ -5,11 +5,19 @@ import { logger } from "@slyxup/logger";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq, and } from "drizzle-orm";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 route.get("/github", async (c) => {
   const state = generateToken();
+  const db = createDb(c.env.DB);
+  const expiresAt = new Date(Date.now() + 300000).toISOString();
+  await db.insert(schema.oauthStates).values({
+    id: generateId(), state, provider: "github",
+    expiresAt, createdAt: new Date().toISOString(),
+  }).run();
+
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", c.env.GITHUB_CLIENT_ID);
   url.searchParams.set("redirect_uri", c.env.GITHUB_CALLBACK_URL);
@@ -34,9 +42,13 @@ const callbackDef = createRoute({
 route.openapi(callbackDef, async (c) => {
   const { code, state } = c.req.valid("query");
 
-  const cookieState = c.req.header("Cookie")?.split(";").find(c => c.trim().startsWith("github_oauth_state="))?.split("=")[1]?.trim();
-  if (state && cookieState && state !== cookieState) {
-    return c.json({ success: false, error: "Invalid state parameter" }, 400);
+  const db = createDb(c.env.DB);
+  if (state) {
+    const stored = await db.select().from(schema.oauthStates).where(eq(schema.oauthStates.state, state)).get();
+    if (!stored || new Date(stored.expiresAt) < new Date()) {
+      return c.json({ success: false, error: "Invalid or expired state parameter" }, 400);
+    }
+    await db.delete(schema.oauthStates).where(eq(schema.oauthStates.id, stored.id)).run();
   }
 
   const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
@@ -77,7 +89,6 @@ route.openapi(callbackDef, async (c) => {
 
   if (!email) return c.json({ success: false, error: "No verified email found on GitHub account" }, 400);
 
-  const db = createDb(c.env.DB);
   const existing = await db.select().from(schema.oauthAccounts).where(
     and(eq(schema.oauthAccounts.provider, "github"), eq(schema.oauthAccounts.providerUserId, String(githubUser.id))),
   ).get();
@@ -119,6 +130,7 @@ route.openapi(callbackDef, async (c) => {
 
   const jwt = await signToken({ sub: userId, email, platform_id: "" }, c.env.JWT_SECRET, 900);
 
+  logAudit(c, "github_login", userId);
   logger.info("github_login", { userId, email });
 
   const user = await db.select().from(schema.users).where(eq(schema.users.id, userId)).get();

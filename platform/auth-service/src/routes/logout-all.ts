@@ -5,6 +5,7 @@ import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -46,6 +47,7 @@ route.openapi(routeDef, async (c) => {
     .where(eq(schema.sessions.userId, payload.sub))
     .run();
 
+  logAudit(c, "all_sessions_revoked", payload.sub);
   logger.info("all_sessions_revoked", { userId: payload.sub });
 
   return c.json({ success: true, data: { message: "All sessions revoked" } });

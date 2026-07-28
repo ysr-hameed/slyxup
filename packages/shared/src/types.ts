@@ -148,6 +148,7 @@ export interface AuthEnv {
   GITHUB_CLIENT_SECRET: string;
   GITHUB_CALLBACK_URL: string;
   API_KEY: string;
+  ADMIN_KEY: string;
   EMAIL_SERVICE_URL: string;
   APP_DOMAIN: string;
   ENVIRONMENT: string;

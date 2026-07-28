@@ -5,11 +5,19 @@ import { logger } from "@slyxup/logger";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq, and } from "drizzle-orm";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 route.get("/google", async (c) => {
   const state = generateToken();
+  const db = createDb(c.env.DB);
+  const expiresAt = new Date(Date.now() + 300000).toISOString();
+  await db.insert(schema.oauthStates).values({
+    id: generateId(), state, provider: "google",
+    expiresAt, createdAt: new Date().toISOString(),
+  }).run();
+
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", c.env.GOOGLE_CLIENT_ID);
   url.searchParams.set("redirect_uri", c.env.GOOGLE_CALLBACK_URL);
@@ -36,9 +44,13 @@ const callbackDef = createRoute({
 route.openapi(callbackDef, async (c) => {
   const { code, state } = c.req.valid("query");
 
-  const cookieState = c.req.header("Cookie")?.split(";").find(c => c.trim().startsWith("oauth_state="))?.split("=")[1]?.trim();
-  if (state && cookieState && state !== cookieState) {
-    return c.json({ success: false, error: "Invalid state parameter" }, 400);
+  const db = createDb(c.env.DB);
+  if (state) {
+    const stored = await db.select().from(schema.oauthStates).where(eq(schema.oauthStates.state, state)).get();
+    if (!stored || new Date(stored.expiresAt) < new Date()) {
+      return c.json({ success: false, error: "Invalid or expired state parameter" }, 400);
+    }
+    await db.delete(schema.oauthStates).where(eq(schema.oauthStates.id, stored.id)).run();
   }
 
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -66,7 +78,6 @@ route.openapi(callbackDef, async (c) => {
     return c.json({ success: false, error: "Google email not verified" }, 400);
   }
 
-  const db = createDb(c.env.DB);
   const existing = await db.select().from(schema.oauthAccounts).where(
     and(eq(schema.oauthAccounts.provider, "google"), eq(schema.oauthAccounts.providerUserId, googleUser.id)),
   ).get();
@@ -99,6 +110,7 @@ route.openapi(callbackDef, async (c) => {
 
   const jwt = await signToken({ sub: userId, email: googleUser.email, platform_id: "" }, c.env.JWT_SECRET, 900);
 
+  logAudit(c, "google_login", userId);
   logger.info("google_login", { userId, email: googleUser.email });
 
   return c.json({

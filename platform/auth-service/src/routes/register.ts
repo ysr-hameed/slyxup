@@ -6,6 +6,7 @@ import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { verificationEmailHtml } from "../email";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -28,7 +29,7 @@ const routeDef = createRoute({
 });
 
 route.openapi(routeDef, async (c) => {
-  const { email, password, name } = c.req.valid("json");
+  const { email, password, name, platform } = c.req.valid("json");
 
   const db = createDb(c.env.DB);
   const existing = await db.select().from(schema.users).where(eq(schema.users.email, email)).get();
@@ -49,6 +50,21 @@ route.openapi(routeDef, async (c) => {
     createdAt: now, updatedAt: now,
   }).run();
 
+  if (platform) {
+    let platformRow = await db.select().from(schema.platforms).where(eq(schema.platforms.slug, platform)).get();
+    if (!platformRow) {
+      const platformId = generateId();
+      await db.insert(schema.platforms).values({
+        id: platformId, slug: platform, name: platform,
+        createdAt: now,
+      }).run();
+      platformRow = { id: platformId, slug: platform, name: platform, domain: null, status: "active", createdAt: now };
+    }
+    await db.insert(schema.platformMemberships).values({
+      id: generateId(), userId: id, platformId: platformRow.id, role: "member", createdAt: now,
+    }).run();
+  }
+
   const verifyLink = `${c.env.APP_DOMAIN}/verify-email?token=${verificationToken}`;
   fetch(`${c.env.EMAIL_SERVICE_URL}/api/email/send`, {
     method: "POST",
@@ -58,12 +74,15 @@ route.openapi(routeDef, async (c) => {
       subject: "Verify your email - SlyxUp",
       html: verificationEmailHtml(verifyLink),
     }),
-  }).catch(() => {});
+  }).catch((err) => {
+    logger.error("email_send_failed", { error: String(err), to: email, type: "verification" });
+  });
 
   if (c.env.ENVIRONMENT === "development") {
     logger.info("dev_verification_link", { verifyLink });
   }
 
+  logAudit(c, "user_registered", id, `email=${email}`);
   logger.info("user_registered", { userId: id, email });
 
   return c.json({

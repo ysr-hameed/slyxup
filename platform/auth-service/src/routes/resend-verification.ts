@@ -46,7 +46,9 @@ route.openapi(routeDef, async (c) => {
       subject: "Verify your email - SlyxUp",
       html: verificationEmailHtml(verifyLink),
     }),
-  }).catch(() => {});
+  }).catch((err) => {
+    logger.error("email_send_failed", { error: String(err), to: user.email, type: "verification_resend" });
+  });
 
   if (c.env.ENVIRONMENT === "development") {
     logger.info("dev_verification_link", { verifyLink });

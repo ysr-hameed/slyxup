@@ -1,10 +1,11 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import type { AuthEnv } from "@slyxup/shared";
-import { apiResponseSchema, hashPassword } from "@slyxup/shared";
+import { apiResponseSchema, hashPassword, passwordSchema } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
 import { eq } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -16,7 +17,7 @@ const routeDef = createRoute({
   request: {
     body: { content: { "application/json": { schema: z.object({
       token: z.string(),
-      password: z.string().min(6),
+      password: passwordSchema,
     }) } } },
   },
   responses: {
@@ -43,6 +44,7 @@ route.openapi(routeDef, async (c) => {
     passwordResetExpires: null,
   }).where(eq(schema.users.id, user.id)).run();
 
+  logAudit(c, "password_reset_completed", user.id);
   logger.info("password_reset_completed", { userId: user.id });
 
   return c.json({ success: true, data: { message: "Password reset successfully" } });

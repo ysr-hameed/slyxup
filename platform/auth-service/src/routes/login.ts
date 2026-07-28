@@ -3,8 +3,9 @@ import type { AuthEnv } from "@slyxup/shared";
 import { loginSchema, apiResponseSchema, verifyPassword, generateToken, generateId, signToken } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
+import { logAudit } from "../middleware/audit";
 
 const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
@@ -35,7 +36,7 @@ const routeDef = createRoute({
 });
 
 route.openapi(routeDef, async (c) => {
-  const { email, password } = c.req.valid("json");
+  const { email, password, platform } = c.req.valid("json");
 
   const db = createDb(c.env.DB);
   const user = await db.select().from(schema.users).where(eq(schema.users.email, email)).get();
@@ -56,6 +57,7 @@ route.openapi(routeDef, async (c) => {
     } else {
       await db.update(schema.users).set({ failedAttempts: newAttempts }).where(eq(schema.users.id, user.id)).run();
     }
+    logAudit(c, "login_failed", user.id, `failed_attempts=${newAttempts}`);
     return c.json({ success: false, error: "Invalid email or password" }, 401);
   }
 
@@ -79,8 +81,21 @@ route.openapi(routeDef, async (c) => {
     expiresAt, createdAt: new Date().toISOString(),
   }).run();
 
-  const jwt = await signToken({ sub: user.id, email: user.email, platform_id: "" }, c.env.JWT_SECRET, 900);
+  let platformId = "";
+  if (platform) {
+    const membership = await db.select().from(schema.platformMemberships)
+      .innerJoin(schema.platforms, eq(schema.platformMemberships.platformId, schema.platforms.id))
+      .where(and(
+        eq(schema.platforms.slug, platform),
+        eq(schema.platformMemberships.userId, user.id),
+      ))
+      .get();
+    if (membership) platformId = membership.platform_memberships.platformId;
+  }
 
+  const jwt = await signToken({ sub: user.id, email: user.email, platform_id: platformId }, c.env.JWT_SECRET, 900);
+
+  logAudit(c, "user_login", user.id, `platform=${platform || "none"}`);
   logger.info("user_login", { userId: user.id, email: user.email });
 
   return c.json({ success: true, data: { token, jwt, user: { id: user.id, email: user.email, name: user.name } } });
