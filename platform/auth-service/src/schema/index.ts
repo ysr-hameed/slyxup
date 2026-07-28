@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
@@ -8,13 +8,28 @@ export const users = sqliteTable("users", {
   googleId: text("google_id"),
   githubId: text("github_id"),
   avatarUrl: text("avatar_url"),
+  authProvider: text("auth_provider", { enum: ["email", "google", "github"] }).default("email").notNull(),
   blocked: integer("blocked").notNull().default(0),
+  blockedAt: text("blocked_at"),
+  blockedReason: text("blocked_reason"),
   emailVerified: integer("email_verified").notNull().default(0),
   emailVerificationToken: text("email_verification_token"),
+  verificationCode: text("verification_code"),
+  verificationExpiry: text("verification_expiry"),
+  verificationAttempts: integer("verification_attempts").notNull().default(0),
   failedAttempts: integer("failed_attempts").notNull().default(0),
   lockedUntil: text("locked_until"),
   passwordResetToken: text("password_reset_token"),
   passwordResetExpires: text("password_reset_expires"),
+  twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
+  twoFactorSecret: text("two_factor_secret"),
+  email2FAEnabled: integer("email_2fa_enabled", { mode: "boolean" }).notNull().default(false),
+  preferred2FA: text("preferred_2fa", { enum: ["authenticator", "email"] }).default("authenticator"),
+  loginOTP: text("login_otp"),
+  loginOTPExpiry: text("login_otp_expiry"),
+  backupCodes: text("backup_codes"),
+  plan: text("plan").default("free").notNull(),
+  pendingPlan: text("pending_plan"),
   deletedAt: text("deleted_at"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
@@ -81,4 +96,43 @@ export const oauthStates = sqliteTable("oauth_states", {
   redirectTo: text("redirect_to"),
   expiresAt: text("expires_at").notNull(),
   createdAt: text("created_at").notNull(),
+});
+
+export const revokedTokens = sqliteTable("revoked_tokens", {
+  tokenHash: text("token_hash").primaryKey(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const securityLogs = sqliteTable("security_logs", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  userId: text("user_id"),
+  ip: text("ip"),
+  data: text("data").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (table) => [
+  index("security_logs_type_idx").on(table.type),
+  index("security_logs_user_id_idx").on(table.userId),
+]);
+
+export const trustedDevices = sqliteTable("trusted_devices", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  trustedAt: text("trusted_at").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+  deviceName: text("device_name"),
+}, (table) => [
+  index("trusted_devices_user_id_idx").on(table.userId),
+  uniqueIndex("trusted_devices_user_fingerprint_unique").on(table.userId, table.fingerprint),
+]);
+
+export const blockedIPs = sqliteTable("blocked_ips", {
+  id: text("id").primaryKey(),
+  ip: text("ip").notNull().unique(),
+  reason: text("reason").notNull(),
+  blockedAt: text("blocked_at").notNull(),
+  expiresAt: text("expires_at"),
+  permanent: integer("permanent", { mode: "boolean" }).notNull().default(true),
 });

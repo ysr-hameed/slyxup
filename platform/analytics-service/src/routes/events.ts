@@ -3,10 +3,12 @@ import type { AnalyticsEnv } from "@slyxup/shared";
 import { trackEventSchema, apiResponseSchema, generateId, requireApiKey } from "@slyxup/shared";
 import { createDb } from "../db";
 import * as schema from "../schema/index";
+import { desc } from "drizzle-orm";
 import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: AnalyticsEnv }>();
 
+route.use("/event", requireApiKey);
 route.use("/events", requireApiKey);
 
 const trackDef = createRoute({
@@ -33,16 +35,27 @@ route.openapi(trackDef, async (c) => {
 const listDef = createRoute({
   method: "get",
   path: "/events",
-  summary: "List events",
+  summary: "List events with pagination",
   tags: ["Analytics"],
+  request: {
+    query: z.object({
+      limit: z.coerce.number().optional().default(50),
+      offset: z.coerce.number().optional().default(0),
+    }),
+  },
   responses: {
-    200: { content: { "application/json": { schema: apiResponseSchema(z.array(z.any())) } }, description: "List of events" },
+    200: { content: { "application/json": { schema: apiResponseSchema(z.array(z.any())) } }, description: "Paginated events" },
   },
 });
 
 route.openapi(listDef, async (c) => {
+  const { limit, offset } = c.req.valid("query");
   const db = createDb(c.env.DB);
-  const results = await db.select().from(schema.events).all();
+  const results = await db.select().from(schema.events)
+    .orderBy(desc(schema.events.createdAt))
+    .limit(limit)
+    .offset(offset)
+    .all();
   return c.json({ success: true, data: results });
 });
 

@@ -29,24 +29,28 @@ export interface NotificationClient {
 }
 
 export function createNotificationClient(config: NotificationClientConfig): NotificationClient {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+  const authHeaders: Record<string, string> = {
     ...(config.apiKey ? { "X-API-Key": config.apiKey } : {}),
   };
 
-  async function request<T>(path: string, body?: unknown): Promise<T> {
+  async function post<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${config.baseUrl}/api/notification${path}`, {
-      method: body ? "POST" : "GET",
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
+      method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
     const json: any = await res.json();
     if (!json.success) throw new Error(json.error);
     return json.data as T;
   }
 
+  async function get<T>(path: string): Promise<T> {
+    const res = await fetch(`${config.baseUrl}/api/notification${path}`, { headers: authHeaders });
+    const json: any = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data as T;
+  }
+
   return {
-    send: (data) => request<NotificationLog>("/send", data),
-    listLogs: () => request<NotificationLog[]>("/logs"),
+    send: (data) => post<NotificationLog>("/send", data),
+    listLogs: () => get<NotificationLog[]>("/logs"),
   };
 }

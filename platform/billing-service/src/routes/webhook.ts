@@ -20,17 +20,19 @@ route.openapi(routeDef, async (c) => {
   const signature = c.req.header("Paddle-Signature") || "";
 
   const secret = c.env.PADDLE_WEBHOOK_SECRET;
-  if (secret) {
-    const encoder = new TextEncoder();
-    const ts = signature.split(";")[0]?.replace("ts=", "") || "";
-    const sig = signature.split(";")[1]?.replace("h1=", "") || "";
-    const payload = `${ts}:${JSON.stringify(body)}`;
-    const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-    const valid = await crypto.subtle.verify("HMAC", key, hexToBytes(sig), encoder.encode(payload));
-    if (!valid) {
-      logger.warn("paddle_webhook_invalid_signature");
-      return c.json({ success: false, error: "Invalid signature" }, 401);
-    }
+  if (!secret) {
+    logger.error("paddle_webhook_secret_not_configured");
+    return c.json({ success: false, error: "Webhook secret not configured" }, 500);
+  }
+  const encoder = new TextEncoder();
+  const ts = signature.split(";")[0]?.replace("ts=", "") || "";
+  const sig = signature.split(";")[1]?.replace("h1=", "") || "";
+  const payload = `${ts}:${JSON.stringify(body)}`;
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+  const valid = await crypto.subtle.verify("HMAC", key, hexToBytes(sig), encoder.encode(payload));
+  if (!valid) {
+    logger.warn("paddle_webhook_invalid_signature");
+    return c.json({ success: false, error: "Invalid signature" }, 401);
   }
 
   logger.info("paddle_webhook", { eventType: body.event_type });

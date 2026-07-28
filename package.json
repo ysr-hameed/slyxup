@@ -27,6 +27,7 @@
     "test:watch": "vitest",
     "start": "./start.sh",
     "start:core": "./start.sh start core",
+    "start:product": "./start.sh start product",
     "start:all": "./start.sh start all",
     "stop:all": "./start.sh stop all",
     "status": "./start.sh status",

@@ -56,8 +56,8 @@ export interface AuthClient {
 }
 
 export function createAuthClient(config: AuthClientConfig): AuthClient {
-  const headers = (token?: string): Record<string, string> => ({
-    "Content-Type": "application/json",
+  const headers = (token?: string, hasBody?: boolean): Record<string, string> => ({
+    ...(hasBody ? { "Content-Type": "application/json" } : {}),
     ...(config.apiKey ? { "X-API-Key": config.apiKey } : {}),
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
   });
@@ -65,7 +65,7 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
   return {
     async login(data) {
       const res = await fetch(`${config.baseUrl}/api/auth/login`, {
-        method: "POST", headers: headers(), body: JSON.stringify(data),
+        method: "POST", headers: headers(undefined, true), body: JSON.stringify(data),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -74,7 +74,7 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
 
     async register(data) {
       const res = await fetch(`${config.baseUrl}/api/auth/register`, {
-        method: "POST", headers: headers(), body: JSON.stringify(data),
+        method: "POST", headers: headers(undefined, true), body: JSON.stringify(data),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -103,7 +103,7 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
 
     async forgotPassword(email: string) {
       const res = await fetch(`${config.baseUrl}/api/auth/forgot-password`, {
-        method: "POST", headers: headers(), body: JSON.stringify({ email }),
+        method: "POST", headers: headers(undefined, true), body: JSON.stringify({ email }),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -112,7 +112,7 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
 
     async resetPassword(token: string, password: string) {
       const res = await fetch(`${config.baseUrl}/api/auth/reset-password`, {
-        method: "POST", headers: headers(), body: JSON.stringify({ token, password }),
+        method: "POST", headers: headers(undefined, true), body: JSON.stringify({ token, password }),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -121,7 +121,7 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
 
     async changePassword(token: string, currentPassword: string, newPassword: string) {
       const res = await fetch(`${config.baseUrl}/api/auth/change-password`, {
-        method: "POST", headers: headers(token), body: JSON.stringify({ currentPassword, newPassword }),
+        method: "POST", headers: headers(token, true), body: JSON.stringify({ currentPassword, newPassword }),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -130,7 +130,7 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
 
     async updateProfile(token: string, data: { name?: string; avatarUrl?: string }) {
       const res = await fetch(`${config.baseUrl}/api/auth/me`, {
-        method: "PATCH", headers: headers(token), body: JSON.stringify(data),
+        method: "PATCH", headers: headers(token, true), body: JSON.stringify(data),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -146,7 +146,7 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
 
     async resendVerification(email: string) {
       const res = await fetch(`${config.baseUrl}/api/auth/resend-verification`, {
-        method: "POST", headers: headers(), body: JSON.stringify({ email }),
+        method: "POST", headers: headers(undefined, true), body: JSON.stringify({ email }),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);

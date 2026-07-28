@@ -17,33 +17,29 @@ export interface AnalyticsClient {
 }
 
 export function createAnalyticsClient(config: AnalyticsClientConfig): AnalyticsClient {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+  const authHeaders: Record<string, string> = {
     ...(config.apiKey ? { "X-API-Key": config.apiKey } : {}),
   };
 
+  async function post<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(`${config.baseUrl}${path}`, {
+      method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    const json: any = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data as T;
+  }
+
+  async function get<T>(path: string): Promise<T> {
+    const res = await fetch(`${config.baseUrl}${path}`, { headers: authHeaders });
+    const json: any = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data as T;
+  }
+
   return {
-    async trackEvent(data) {
-      const res = await fetch(`${config.baseUrl}/api/analytics/event`, {
-        method: "POST", headers, body: JSON.stringify(data),
-      });
-      const json: any = await res.json();
-      if (!json.success) throw new Error(json.error);
-    },
-
-    async trackPageView(data) {
-      const res = await fetch(`${config.baseUrl}/api/analytics/pageview`, {
-        method: "POST", headers, body: JSON.stringify(data),
-      });
-      const json: any = await res.json();
-      if (!json.success) throw new Error(json.error);
-    },
-
-    async getSummary() {
-      const res = await fetch(`${config.baseUrl}/api/analytics/summary`, { headers });
-      const json: any = await res.json();
-      if (!json.success) throw new Error(json.error);
-      return json.data;
-    },
+    trackEvent: (data) => post("/api/analytics/event", data),
+    trackPageView: (data) => post("/api/analytics/pageview", data),
+    getSummary: () => get<{ totalPageViews: number }>("/api/analytics/summary"),
   };
 }

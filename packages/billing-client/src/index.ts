@@ -1,6 +1,7 @@
 export interface BillingClientConfig {
   baseUrl: string;
   apiKey?: string;
+  jwt?: string;
 }
 
 export interface Plan {
@@ -41,15 +42,14 @@ export interface BillingClient {
 }
 
 export function createBillingClient(config: BillingClientConfig): BillingClient {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(config.apiKey ? { "X-API-Key": config.apiKey } : {}),
-  };
+  const authHeaders: Record<string, string> = config.jwt
+    ? { Authorization: `Bearer ${config.jwt}` }
+    : { ...(config.apiKey ? { "X-API-Key": config.apiKey } : {}) };
 
   return {
     async listPlans(platform) {
       const params = platform ? `?platform=${platform}` : "";
-      const res = await fetch(`${config.baseUrl}/api/billing/plans${params}`, { headers });
+      const res = await fetch(`${config.baseUrl}/api/billing/plans${params}`, { headers: authHeaders });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data as Plan[];
@@ -57,7 +57,7 @@ export function createBillingClient(config: BillingClientConfig): BillingClient 
 
     async createCheckout(data) {
       const res = await fetch(`${config.baseUrl}/api/billing/create-checkout`, {
-        method: "POST", headers, body: JSON.stringify(data),
+        method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify(data),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -66,7 +66,7 @@ export function createBillingClient(config: BillingClientConfig): BillingClient 
 
     async createPortal(data) {
       const res = await fetch(`${config.baseUrl}/api/billing/create-portal`, {
-        method: "POST", headers, body: JSON.stringify(data),
+        method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify(data),
       });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
@@ -74,7 +74,7 @@ export function createBillingClient(config: BillingClientConfig): BillingClient 
     },
 
     async getSubscription(userId: string) {
-      const res = await fetch(`${config.baseUrl}/api/billing/subscription?user_id=${userId}`, { headers });
+      const res = await fetch(`${config.baseUrl}/api/billing/subscription?user_id=${userId}`, { headers: authHeaders });
       const json: any = await res.json();
       if (!json.success) throw new Error(json.error);
       return json.data as Subscription;

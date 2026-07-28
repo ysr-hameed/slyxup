@@ -15,7 +15,7 @@ SERVICES=(
 )
 
 PRODUCTS=(
-  "url-shortener:9000:products/url-shortener/apps/api"
+  "url-shortener-api:9000:products/url-shortener"
   "url-shortener-web:5173:products/url-shortener/apps/web:vite"
 )
 
@@ -23,8 +23,8 @@ ALL_ENTRIES=("${SERVICES[@]}" "${PRODUCTS[@]}")
 
 declare -A DEPS
 DEPS[auth-service]="email-service"
-DEPS[url-shortener]="auth-service"
-DEPS[url-shortener-web]="auth-service billing-service email-service analytics-service storage-service admin-service notification-service url-shortener"
+DEPS[url-shortener-api]="auth-service billing-service analytics-service"
+DEPS[url-shortener-web]="auth-service billing-service url-shortener-api"
 
 declare -A REQ_VARS
 REQ_VARS[auth-service]="JWT_SECRET ENVIRONMENT API_KEY EMAIL_SERVICE_URL"
@@ -34,7 +34,28 @@ REQ_VARS[analytics-service]="ENVIRONMENT"
 REQ_VARS[storage-service]="ENVIRONMENT"
 REQ_VARS[admin-service]="ENVIRONMENT"
 REQ_VARS[notification-service]="ENVIRONMENT"
-REQ_VARS[url-shortener]="JWT_SECRET ENVIRONMENT API_KEY AUTH_SERVICE_URL BILLING_SERVICE_URL ANALYTICS_SERVICE_URL"
+REQ_VARS[url-shortener-api]="JWT_SECRET ENVIRONMENT API_KEY AUTH_SERVICE_URL BILLING_SERVICE_URL ANALYTICS_SERVICE_URL"
+
+SHORT_NAMES=(
+  ["auth"]="auth-service"
+  ["billing"]="billing-service"
+  ["email"]="email-service"
+  ["analytics"]="analytics-service"
+  ["storage"]="storage-service"
+  ["admin"]="admin-service"
+  ["notification"]="notification-service"
+  ["api"]="url-shortener-api"
+  ["web"]="url-shortener-web"
+  ["frontend"]="url-shortener-web"
+)
+
+resolve_name() {
+  local input="$1"
+  for entry in "${ALL_ENTRIES[@]}"; do
+    [ "${entry%%:*}" = "$input" ] && echo "$input" && return 0
+  done
+  echo "${SHORT_NAMES[$input]:-$input}"
+}
 
 declare -A DB
 DB[auth-service]="slyxup-auth"
@@ -42,7 +63,7 @@ DB[billing-service]="slyxup-billing"
 DB[analytics-service]="slyxup-analytics"
 DB[admin-service]="slyxup-admin"
 DB[notification-service]="slyxup-notification"
-DB[url-shortener]="slyxup-url-shortener"
+DB[url-shortener-api]="slyxup-url-shortener"
 
 # ── Helpers ──
 
@@ -68,15 +89,16 @@ get_runner() {
   [ "$rnr" = "${r2%%:*}" ] && echo "wrangler" || echo "$rnr"
 }
 
-get_pid()    { lsof -ti :"$1" 2>/dev/null | tr '\n' ' ' || true; }
+get_pids()   { lsof -ti :"$1" 2>/dev/null | tr '\n' ' ' || true; }
+get_pid()    { lsof -ti :"$1" 2>/dev/null | head -1 || true; }
 cli_pids()   { pgrep -f "cli.js dev.*--port $1" 2>/dev/null || true; }
 workerd_pids() { pgrep -f "workerd.*localhost:$1" 2>/dev/null || true; }
 
 kill_port() {
   local port="$1" name="$2"
-  kill $(get_pid "$port") $(cli_pids "$port") $(workerd_pids "$port") 2>/dev/null || true
+  kill $(get_pids "$port") $(cli_pids "$port") $(workerd_pids "$port") 2>/dev/null || true
   sleep 1
-  kill -9 $(get_pid "$port") $(cli_pids "$port") $(workerd_pids "$port") 2>/dev/null || true
+  kill -9 $(get_pids "$port") $(cli_pids "$port") $(workerd_pids "$port") 2>/dev/null || true
   rm -f "$LOGS/$name.pid" 2>/dev/null || true
 }
 
@@ -179,6 +201,8 @@ start_entry() {
   cd "$full"
   if [ "$runner" = "vite" ]; then
     nohup npx vite --port "$port" --host > "$LOGS/$name.log" 2>&1 &
+  elif [ "$name" = "url-shortener-api" ]; then
+    nohup npx wrangler dev --port "$port" --config apps/api/wrangler.jsonc > "$LOGS/$name.log" 2>&1 &
   else
     nohup npx wrangler dev --port "$port" > "$LOGS/$name.log" 2>&1 &
   fi
@@ -230,6 +254,33 @@ stop_all() {
   echo "All services stopped"
 }
 
+start_group() {
+  local names=("$@")
+
+  declare -A lvls
+  max_lvl=0
+  for name in "${names[@]}"; do
+    lvls[$name]=$(get_level "$name")
+    [ "${lvls[$name]}" -gt "$max_lvl" ] && max_lvl=${lvls[$name]}
+  done
+
+  failed=0
+  for lvl in $(seq 0 "$max_lvl"); do
+    wave=()
+    for name in "${names[@]}"; do
+      [ "${lvls[$name]}" -eq "$lvl" ] && wave+=("$name")
+    done
+    [ "${#wave[@]}" -eq 0 ] && continue
+    echo ""
+    echo "── Level $lvl ──"
+    start_wave "${wave[@]}" || failed=1
+  done
+
+  echo ""
+  show_status "Service Status" "${ALL_ENTRIES[@]}"
+  [ "$failed" -eq 1 ] && echo "⚠ Some services failed to start. Check logs above." && exit 1
+}
+
 cmd="${1:-help}"
 shift || true
 
@@ -239,34 +290,36 @@ case "$cmd" in
     shift || true
 
     case "$scope" in
-      core|all)
+      core)
         names=()
         for entry in "${SERVICES[@]}"; do names+=("${entry%%:*}"); done
-        [ "$scope" = "all" ] && for entry in "${PRODUCTS[@]}"; do names+=("${entry%%:*}"); done
-
-        declare -A lvls
-        max_lvl=0
-        for name in "${names[@]}"; do
-          lvls[$name]=$(get_level "$name")
-          [ "${lvls[$name]}" -gt "$max_lvl" ] && max_lvl=${lvls[$name]}
-        done
-
-        failed=0
-        for lvl in $(seq 0 "$max_lvl"); do
-          wave=()
-          for name in "${names[@]}"; do
-            [ "${lvls[$name]}" -eq "$lvl" ] && wave+=("$name")
-          done
-          [ "${#wave[@]}" -eq 0 ] && continue
-          echo ""
-          echo "── Level $lvl ──"
-          start_wave "${wave[@]}" || failed=1
-        done
-        echo ""
-        show_status "Service Status" "${ALL_ENTRIES[@]}"
-        [ "$failed" -eq 1 ] && echo "⚠ Some services failed to start. Check logs above." && exit 1
+        start_group "${names[@]}"
         ;;
+
+      product)
+        names=()
+        for entry in "${PRODUCTS[@]}"; do names+=("${entry%%:*}"); done
+        # Resolve dependency chain: platform services → product api → product web
+        all_names=()
+        for name in "${names[@]}"; do
+          deps=$(resolve_deps "$name" "")
+          for d in $deps; do
+            [[ " ${all_names[*]} " != *" $d "* ]] && all_names+=("$d")
+          done
+          [[ " ${all_names[*]} " != *" $name "* ]] && all_names+=("$name")
+        done
+        start_group "${all_names[@]}"
+        ;;
+
+      all)
+        names=()
+        for entry in "${SERVICES[@]}"; do names+=("${entry%%:*}"); done
+        for entry in "${PRODUCTS[@]}"; do names+=("${entry%%:*}"); done
+        start_group "${names[@]}"
+        ;;
+
       *)
+        scope=$(resolve_name "$scope")
         deps=$(resolve_deps "$scope" "")
         order=()
         for d in $deps; do order+=("$d"); done
@@ -281,8 +334,13 @@ case "$cmd" in
           echo "  Waiting for $name..."
           wait_health "$port" "$name" 30 && echo "  ✓ $name healthy" || { echo "  ✗ $name FAILED"; failed=1; }
         done
+        running=()
+        for entry in "${ALL_ENTRIES[@]}"; do
+          name="${entry%%:*}"
+          [ -f "$LOGS/$name.pid" ] && running+=("$entry")
+        done
         echo ""
-        show_status "Running Services" "${ALL_ENTRIES[@]}"
+        show_status "Running Services" "${running[@]}"
         [ "$failed" -eq 1 ] && echo "⚠ Some services failed" && exit 1
         ;;
     esac
@@ -294,6 +352,7 @@ case "$cmd" in
     if [ "$scope" = "all" ]; then
       stop_all
     else
+      scope=$(resolve_name "$scope")
       for entry in "${ALL_ENTRIES[@]}"; do
         name="${entry%%:*}"
         rest="${entry#*:}"
@@ -314,6 +373,7 @@ case "$cmd" in
       sleep 1
       "$0" start all
     else
+      scope=$(resolve_name "$scope")
       port=$(get_port "$scope" 2>/dev/null) || port="$scope"
       name=""
       for entry in "${ALL_ENTRIES[@]}"; do
@@ -329,15 +389,11 @@ case "$cmd" in
 
   status)
     echo ""
-    if ls "$LOGS"/*.pid >/dev/null 2>&1; then
-      show_status "Service Status" "${ALL_ENTRIES[@]}"
-    else
-      show_status "All Services Stopped" "${ALL_ENTRIES[@]}"
-    fi
+    show_status "Service Status" "${ALL_ENTRIES[@]}"
     ;;
 
   logs)
-    name="${1:-auth}"
+    name=$(resolve_name "${1:-auth}")
     logfile="$LOGS/$name.log"
     if [ ! -f "$logfile" ]; then
       echo "No log for '$name'. Available:"
@@ -445,23 +501,30 @@ case "$cmd" in
     echo "  start [scope]    Start services (dependency-aware, health-checked)"
     echo "    Scopes:"
     echo "      core               Platform services only (auth → notification)"
-    echo "      all                Core + products"
-    echo "      <name>             Service + its deps (e.g., auth, url-shortener)"
+    echo "      product            URL Shortener (API backend + web frontend + deps)"
+    echo "      all                Core + product"
+    echo "      <name>             Service or short name (e.g., auth, billing, storage)"
     echo ""
     echo "  stop [scope]     Stop services (all, name, or port)"
     echo "  restart [scope]  Stop + start"
     echo "  status           Show running services (port, PID, health, uptime)"
-    echo "  logs [name]      Tail logs (default: auth-service)"
+    echo "  logs [name]      Tail logs (default: auth)"
     echo "  cleanup          Force-kill all wrangler/vite/workerd processes"
     echo "  check            Validate .dev.vars, ports, migrations"
     echo ""
+    echo "Short names (use anywhere):"
+    echo "  auth, billing, email, analytics, storage, admin, notification"
+    echo "  api, web/frontend"
+    echo ""
     echo "Examples:"
-    echo "  ./start.sh start core              # Start all platform services"
-    echo "  ./start.sh start url-shortener     # Start auth → url-shortener"
-    echo "  ./start.sh start auth              # Start email → auth"
-    echo "  ./start.sh start all               # Every service"
-    echo "  ./start.sh check                   # Pre-flight check"
-    echo "  ./start.sh status                  # Show health dashboard"
-    echo "  ./start.sh logs auth-service       # Watch auth logs"
+    echo "  ./start.sh start auth    # Start email → auth"
+    echo "  ./start.sh start billing # Start billing + its deps"
+    echo "  ./start.sh start api     # Start URL Shortener API + deps"
+    echo "  ./start.sh start core    # Start all 7 platform services"
+    echo "  ./start.sh start product # Start URL Shortener (API + Web + deps)"
+    echo "  ./start.sh start all     # Everything"
+    echo "  ./start.sh stop billing  # Stop billing service"
+    echo "  ./start.sh status        # Show health dashboard"
+    echo "  ./start.sh logs auth     # Watch auth logs"
     ;;
 esac

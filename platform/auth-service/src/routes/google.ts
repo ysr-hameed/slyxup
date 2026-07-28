@@ -11,10 +11,12 @@ const route = new OpenAPIHono<{ Bindings: AuthEnv }>();
 
 route.get("/google", async (c) => {
   const state = generateToken();
+  const redirectUrl = c.req.query("redirect_url") || c.env.APP_DOMAIN || "";
   const db = createDb(c.env.DB);
   const expiresAt = new Date(Date.now() + 300000).toISOString();
   await db.insert(schema.oauthStates).values({
     id: generateId(), state, provider: "google",
+    redirectTo: redirectUrl,
     expiresAt, createdAt: new Date().toISOString(),
   }).run();
 
@@ -45,11 +47,13 @@ route.openapi(callbackDef, async (c) => {
   const { code, state } = c.req.valid("query");
 
   const db = createDb(c.env.DB);
+  let oauthRedirectUrl = c.env.APP_DOMAIN || "";
   if (state) {
     const stored = await db.select().from(schema.oauthStates).where(eq(schema.oauthStates.state, state)).get();
     if (!stored || new Date(stored.expiresAt) < new Date()) {
       return c.json({ success: false, error: "Invalid or expired state parameter" }, 400);
     }
+    oauthRedirectUrl = stored.redirectTo || oauthRedirectUrl;
     await db.delete(schema.oauthStates).where(eq(schema.oauthStates.id, stored.id)).run();
   }
 
@@ -86,6 +90,10 @@ route.openapi(callbackDef, async (c) => {
   if (existing) {
     userId = existing.userId;
   } else {
+    const existingUser = await db.select().from(schema.users).where(eq(schema.users.email, googleUser.email)).get();
+    if (existingUser?.passwordHash) {
+      return c.json({ success: false, error: "An account with this email already uses email/password login. Sign in with your email and password instead." }, 409);
+    }
     userId = generateId();
     const now = new Date().toISOString();
     await db.insert(schema.users).values({
@@ -113,10 +121,9 @@ route.openapi(callbackDef, async (c) => {
   logAudit(c, "google_login", userId);
   logger.info("google_login", { userId, email: googleUser.email });
 
-  return c.json({
-    success: true,
-    data: { token, jwt, user: { id: userId, email: googleUser.email, name: googleUser.name, avatarUrl: googleUser.picture } },
-  });
+  return c.redirect(
+    `${oauthRedirectUrl}/oauth/callback?jwt=${encodeURIComponent(jwt)}&token=${encodeURIComponent(token)}`
+  );
 });
 
 export default route;

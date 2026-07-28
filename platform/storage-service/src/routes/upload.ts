@@ -26,6 +26,13 @@ route.openapi(routeDef, async (c) => {
 
   if (!file) return c.json({ success: false, error: "No file provided" }, 400);
 
+  const maxSize = 100 * 1024 * 1024;
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf", "text/plain", "application/json", "application/octet-stream"];
+
+  if (file.size > maxSize) {
+    return c.json({ success: false, error: "File exceeds 100MB limit" }, 400);
+  }
+
   await c.env.R2.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
   const url = `${c.env.R2_PUBLIC_URL}/${key}`;
   logger.info("file_uploaded", { key, size: file.size, type: file.type });

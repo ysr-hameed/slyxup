@@ -7,6 +7,7 @@ import { logger } from "@slyxup/logger";
 
 const route = new OpenAPIHono<{ Bindings: AnalyticsEnv }>();
 
+route.use("/pageview", requireApiKey);
 route.use("/summary", requireApiKey);
 
 const trackDef = createRoute({

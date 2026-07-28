@@ -13,7 +13,6 @@ import logoutAll from "./routes/logout-all";
 import me from "./routes/me";
 import verify from "./routes/verify";
 import google from "./routes/google";
-import github from "./routes/github";
 import sessions from "./routes/sessions";
 import forgotPassword from "./routes/forgot-password";
 import resetPassword from "./routes/reset-password";
@@ -22,6 +21,7 @@ import updateProfile from "./routes/update-profile";
 import resendVerification from "./routes/resend-verification";
 import deleteAccount from "./routes/delete-account";
 import admin from "./routes/admin";
+import twofa from "./routes/twofa";
 import { d1RateLimit } from "./middleware/rate-limit";
 
 const app = new OpenAPIHono<{ Bindings: AuthEnv }>();
@@ -35,6 +35,9 @@ app.use("/api/auth/login", d1RateLimit({ max: 20, window: 60000 }));
 app.use("/api/auth/register", d1RateLimit({ max: 10, window: 60000 }));
 app.use("/api/auth/forgot-password", d1RateLimit({ max: 5, window: 60000 }));
 app.use("/api/auth/resend-verification", d1RateLimit({ max: 5, window: 60000 }));
+app.use("/api/auth/login-2fa", d1RateLimit({ max: 10, window: 60000 }));
+app.use("/api/auth/verify-2fa", d1RateLimit({ max: 10, window: 60000 }));
+app.use("/api/auth/2fa/*", d1RateLimit({ max: 20, window: 60000 }));
 app.use("/api/auth/*", d1RateLimit({ max: 60, window: 60000 }));
 
 app.use("*", async (c, next) => {
@@ -51,7 +54,6 @@ app.route("/api/auth", logoutAll);
 app.route("/api/auth", me);
 app.route("/api/auth", verify);
 app.route("/api/auth", google);
-app.route("/api/auth", github);
 app.route("/api/auth", sessions);
 app.route("/api/auth", forgotPassword);
 app.route("/api/auth", resetPassword);
@@ -60,6 +62,7 @@ app.route("/api/auth", updateProfile);
 app.route("/api/auth", resendVerification);
 app.route("/api/auth", deleteAccount);
 app.route("/api/auth", admin);
+app.route("/api/auth", twofa);
 
 setupOpenApi(app, {
   title: "Slyxup Auth API",

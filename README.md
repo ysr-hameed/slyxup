@@ -1,323 +1,453 @@
 # Slyxup Platform
 
-7 isolated Cloudflare Workers + SDK for building multi-tenant SaaS products.
-
-## Structure
+7 isolated Cloudflare Workers + 10 shared packages + SDK for building multi-tenant SaaS products. Everything runs on Cloudflare's edge — no servers, no containers, no ops.
 
 ```
-slyxup.in/
-├── packages/              # Shared libraries (10 packages)
-│   ├── shared/            # Types, JWT, crypto, Zod validation, OpenAPI helpers
-│   ├── logger/            # Structured JSON logger
-│   ├── sdk/               # Unified client wrapping all 7 service clients
-│   ├── auth-client/       # Auth API HTTP client
-│   ├── billing-client/    # Billing API HTTP client
-│   ├── email-client/      # Email API HTTP client
-│   ├── analytics-client/  # Analytics API HTTP client
-│   ├── storage-client/    # Storage API HTTP client
-│   ├── admin-client/      # Admin API HTTP client
-│   └── notification-client/ # Notification API HTTP client
-│   └── ui/                # Shared React components (Button, Input, Card, Badge, Navbar, AuthGuard)
-│
-├── platform/             # 7 Cloudflare Workers (one per account)
-│   ├── auth-service/     # Auth: register, login, logout, Google OAuth, JWT
-│   ├── billing-service/  # Billing: Paddle plans, subscriptions, invoices, webhooks
-│   ├── email-service/    # Email: transactional emails via Brevo API
-│   ├── analytics-service/ # Analytics: custom events + page views
-│   ├── storage-service/  # Storage: file upload/download via R2
-│   ├── admin-service/    # Admin: user management, audit logs
-│   └── notification-service/ # Notification: templates, send, logs
-│
-├── products/             # SaaS products consuming the SDK
-│   └── url-shortener/    # Test product: demo of SDK + platform usage
-│       ├── apps/api/     # Cloudflare Worker (Hono) — POST/GET /api/url, redirect
-│       └── apps/web/     # React + Vite frontend
-│
-├── start.sh              # Start/stop/log/status all services
-├── AGENTS.md             # Full architecture reference for AI coding agents
-└── pnpm-workspace.yaml   # Monorepo config
+auth.slyxup.online         → Auth
+billing.slyxup.online      → Billing
+email.slyxup.online        → Email
+analytics.slyxup.online    → Analytics
+storage.slyxup.online      → Storage
+notification.slyxup.online → Notification
+admin.slyxup.online        → Admin
+api-url.slyxup.online      → URL Shortener API
+url.slyxup.online          → URL Shortener Web (Pages)
 ```
 
-## How it works
+---
 
-Each `platform/<name>-service/` is an independent Cloudflare Worker with its own D1 database (except email + storage which use Brevo/R2 directly). They communicate **only** via HTTP. No service imports another service's code.
+## What is this? (high-level)
 
-Products use `@slyxup/sdk` to call platform services:
+Slyxup is a **platform of platforms** — a set of reusable backend services that any SaaS product can use for common needs: auth, billing, email, analytics, file storage, notifications, and admin tooling.
+
+Think of it like building your own Supabase or Firebase, but:
+- Each service is **independent** (no monolith — deploy/auth/bill/scale separate)
+- Runs on **Cloudflare Workers** (global edge, near-zero cold start, cheap)
+- Accessed via **SDK** (one import to get all 7 services)
+- **Multi-tenant by design** (a `platform` field on every record)
+
+---
+
+## Why 7 separate services?
+
+### Isolation
+Each service has its own:
+- **Worker** (deploys independently, can scale differently)
+- **Database** (no single DB bottleneck, different D1 databases)
+- **Domain** (clear boundaries — auth bugs don't break billing)
+- **Rate limits** (D1-backed, per-service — one service can't DoS another)
+
+### Why not a monolith?
+| Monolith | This approach |
+|----------|--------------|
+| Single deployment — auth bug breaks everything | Auth deploys at `auth.slyxup.online`, billing at `billing.slyxup.online` — they don't share processes |
+| Single DB — analytics load slows down login | Analytics uses its own D1 instance — auth is never affected |
+| One rate limit for everything | Each service has its own rate limit table and config |
+| Hard to reason about | Each service is <500 lines of route handlers |
+| One language lock-in | Could rewrite storage in Rust tomorrow — it only exposes HTTP |
+
+### Not all services need a DB
+- **Email** (Brevo API — no persistence needed)
+- **Storage** (R2 — object storage, not a relational DB)
+
+These are pure-proxy workers that transform API calls to their upstream.
+
+---
+
+## The 7 Services (detailed)
+
+### 1. Auth Service (`auth.slyxup.online`, port 8000)
+
+**What it does:** Register, login, logout, email verification, password reset, Google/GitHub OAuth, session management, account lockout.
+
+**Why separate:** Authentication is the most security-critical piece. Isolating it means:
+- A bug in analytics event tracking **cannot** leak auth tokens
+- Rate limits are stricter (5 req/min on forgot-password vs 60 on other endpoints)
+- Can rotate secrets (`JWT_SECRET`, `GOOGLE_CLIENT_SECRET`) without touching other services
+
+**How other services use it:** URL shortener API verifies JWTs locally (no HTTP call per request). Admin service also verifies admin JWTs. Both share the same `JWT_SECRET`.
+
+**Endpoints:**
+```
+POST /api/auth/register         → Create account + send verification email
+POST /api/auth/login            → JWT (15min) + session token (30d)
+POST /api/auth/logout           → Revoke current session
+POST /api/auth/refresh          → Exchange session token for new JWT
+POST /api/auth/logout-all       → Revoke all sessions
+GET  /api/auth/me               → Get profile (requires JWT)
+PATCH /api/auth/me              → Update name/avatar (requires JWT)
+DELETE /api/auth/me             → Soft-delete account (requires JWT)
+GET  /api/auth/verify?token=    → Verify email (no auth — public)
+POST /api/auth/change-password  → Change password (requires JWT)
+POST /api/auth/forgot-password  → Send reset email
+POST /api/auth/reset-password   → Reset with token
+POST /api/auth/resend-verification → Resend verification email
+GET  /api/auth/google           → OAuth redirect
+GET  /api/auth/google/callback  → OAuth callback
+GET  /api/auth/github           → OAuth redirect
+GET  /api/auth/github/callback  → OAuth callback
+GET  /api/auth/sessions         → List active sessions (requires JWT)
+DELETE /api/auth/sessions/:id   → Revoke specific session (requires JWT)
+```
+
+**Security features:**
+- Password policy: 8+ chars, upper + lower + number
+- Account lockout: 5 failed attempts = 15 min block
+- JWT expiry: 15 minutes (short-lived, refresh via session)
+- Email verification required before login
+- Rate limiting: 20/min login, 10/min register, 5/min forgot-password
+- D1-backed rate limits (persistent across Worker restarts)
+
+---
+
+### 2. Billing Service (`billing.slyxup.online`, port 8001)
+
+**What it does:** Plans, Paddle checkouts, subscription management, invoice tracking, webhook handling.
+
+**Why separate:** Payment data is sensitive. The billing service:
+- Communicates with Paddle API (needs its own `PADDLE_API_KEY`)
+- Handles webhooks signed with `PADDLE_WEBHOOK_SECRET` (fail-closed — rejects unsigned requests)
+- Has its own subscription/invoice tables
+- Isolated so a billing bug never affects authentication or analytics
+
+**Environment:**
+- `PADDLE_URL_MODE` = `"production"` → uses `checkout.paddle.com` / `portal.paddle.com`
+- `PADDLE_URL_MODE` unset or anything else → uses `sandbox-checkout.paddle.com` / `sandbox-portal.paddle.com`
+
+**Endpoints:**
+```
+GET  /api/billing/plans?platform= → List available plans
+POST /api/billing/create-checkout → Create Paddle checkout URL
+POST /api/billing/create-portal   → Create Paddle customer portal URL
+GET  /api/billing/subscription?user_id= → Get user's subscription
+POST /api/billing/webhook         → Paddle webhook (signature-verified)
+```
+
+---
+
+### 3. Email Service (`email.slyxup.online`, port 8002)
+
+**What it does:** Sends transactional emails via Brevo API.
+
+**Why separate (no DB):** This is a thin proxy. Isolating it means:
+- Auth service doesn't need Brevo API keys at all — just calls this service internally
+- Can swap Brevo for SendGrid/SES/Resend by changing one Worker
+- No DB = lowest possible latency
+
+**Endpoints:**
+```
+POST /api/email/send  → Send email (requires X-API-Key)
+```
+
+---
+
+### 4. Analytics Service (`analytics.slyxup.online`, port 8003)
+
+**What it does:** Custom event tracking, page view tracking, summary stats.
+
+**Why separate:** Analytics generates the most data volume. Isolating it means:
+- High write throughput doesn't affect auth or billing
+- Can use different D1 configuration (larger DB, different caching)
+- Can change analytics implementation (e.g., switch to Tinybird/Clickhouse) without touching other services
+
+**Endpoints:**
+```
+POST /api/analytics/event      → Track custom event (requires X-API-Key)
+POST /api/analytics/pageview   → Track page view (requires X-API-Key)
+GET  /api/analytics/events     → List events with pagination (requires X-API-Key)
+GET  /api/analytics/summary    → Get summary stats (requires X-API-Key)
+```
+
+---
+
+### 5. Storage Service (`storage.slyxup.online`, port 8004)
+
+**What it does:** File upload/download/list/delete via Cloudflare R2.
+
+**Why separate (no DB):** R2 is S3-compatible object storage. Isolating it means:
+- Any product can upload/download without S3 credentials
+- File validation (size limits, type checking) lives in one place
+- Can add CDN caching, signed URLs, virus scanning — all in one Worker
+
+**Endpoints:**
+```
+POST /api/storage/upload?key=    → Upload file (100MB limit, requires X-API-Key)
+GET  /api/storage/download?key= → Download file (requires X-API-Key)
+GET  /api/storage/list?prefix=  → List files with prefix filter (requires X-API-Key)
+DELETE /api/storage/delete?key= → Delete file (requires X-API-Key)
+```
+
+---
+
+### 6. Admin Service (`admin.slyxup.online`, port 8005)
+
+**What it does:** Dashboard stats, user management, audit logging.
+
+**Why separate:** Admin operations need elevated permissions (`X-Admin-Key`) but still need access to platform data. Isolating it means:
+- Admin panel code never touches user-facing services
+- Audit logs have their own table (can't be tampered with from user endpoints)
+- Strict authentication with separate `ADMIN_KEY`
+
+**Endpoints:**
+```
+GET  /api/admin/dashboard   → Dashboard stats (requires X-Admin-Key)
+GET  /api/admin/users       → List users (requires X-Admin-Key)
+POST /api/admin/users       → Create user (requires X-Admin-Key)
+GET  /api/admin/audit-logs  → List audit logs (requires X-Admin-Key)
+POST /api/admin/audit-logs  → Create audit log entry (requires X-Admin-Key)
+```
+
+---
+
+### 7. Notification Service (`notification.slyxup.online`, port 8006)
+
+**What it does:** Send and log notifications (email, SMS, push).
+
+**Why separate:** Notifications are cross-cutting. Isolating it means:
+- Notifications can be queued/retried without blocking the calling service
+- All notification logs in one place (across all products)
+- Can add new channels (SMS via Twilio, push via FCM) without touching other services
+
+**Endpoints:**
+```
+POST /api/notification/send   → Send notification (email → forwards to email-service via HTTP, requires X-API-Key)
+GET  /api/notification/logs   → List notification logs with pagination (requires X-API-Key)
+```
+
+---
+
+## The 8 Shared Packages
+
+| Package | What it provides | Used by |
+|---------|------------------|---------|
+| `@slyxup/shared` | Zod schemas, JWT sign/verify, password hash/verify, crypto (`generateId`, `generateToken`), CORS config, API response format, rate limit middleware (both in-memory and D1-backed), OpenAPI setup helpers | All services + SDK |
+| `@slyxup/logger` | Structured JSON logger (`logger.info/warn/error/debug`), `createHonoErrorHandler()` that logs + returns 500 | All services |
+| `@slyxup/auth-client` | HTTP client for auth service (`login`, `register`, `verifyEmail`, etc.) | SDK, products |
+| `@slyxup/billing-client` | HTTP client for billing service (`listPlans`, `getSubscription`, etc.) | SDK, products |
+| `@slyxup/email-client` | HTTP client for email service (`send`) | SDK, notification service |
+| `@slyxup/analytics-client` | HTTP client for analytics service (`trackEvent`, `trackPageView`, etc.) | SDK, products |
+| `@slyxup/storage-client` | HTTP client for storage service (`upload`, `list`, `getDownloadUrl`) | SDK, products |
+| `@slyxup/admin-client` | HTTP client for admin service (`listUsers`, `createAuditLog`, etc.) | SDK, admin tools |
+| `@slyxup/notification-client` | HTTP client for notification service (`send`, `listLogs`) | SDK, products |
+| `@slyxup/sdk` | Unified `createSlyxupClient()` that wraps all 7 clients in one import | Products |
+
+All packages use `workspace:*` protocol internally. `pnpm publish` auto-converts to version ranges.
+
+---
+
+## How to use the SDK
 
 ```ts
 import { createSlyxupClient } from "@slyxup/sdk";
 
-const api = createSlyxupClient({ apiKey: "sk-..." });
-await api.auth.login({ email, password });
-await api.billing.listPlans();
-await api.storage.upload(file);
+// In a product (like URL shortener), provide base URLs for services it needs:
+const api = createSlyxupClient({
+  authBaseUrl: "https://auth.slyxup.online",
+  billingBaseUrl: "https://billing.slyxup.online",
+  apiKey: "sk-...", // optional — needed for service-to-service calls
+});
+
+// Auth
+const { jwt, user } = await api.auth.login({ email, password, platform: "url-shortener" });
+await api.auth.register({ email, password, name, platform: "url-shortener" });
+await api.auth.verifyEmail(token);
+const profile = await api.auth.me(jwt);
+
+// Billing
+const plans = await api.billing.listPlans("url-shortener");
+const sub = await api.billing.getSubscription(userId);
+const { url } = await api.billing.createCheckout({ plan_id, user_id, platform, success_url, cancel_url });
+
+// Analytics
+await api.analytics.trackEvent({ name: "signup", platform: "url-shortener", user_id });
+await api.analytics.trackPageView({ path: "/dashboard", platform: "url-shortener" });
+
+// Storage (upload from browser)
+const { key, url } = await api.storage.upload(file);
+// Storage (get download URL for existing file)
+const downloadUrl = api.storage.getDownloadUrl(key);
+// Storage (list files)
+const files = await api.storage.list("uploads/");
+
+// Notification
+await api.notification.send({
+  user_id, channel: "email", to_address: "user@example.com",
+  subject: "Welcome!", body: "<h1>Hello</h1>",
+});
 ```
 
-### Worker domains (production)
+---
 
-| Service | Domain | Account |
-|---------|--------|---------|
-| Auth | auth.slyxup.online | #1 |
-| Billing | billing.slyxup.online | #2 |
-| Email | email.slyxup.online | #3 |
-| Analytics | analytics.slyxup.online | #4 |
-| Storage | storage.slyxup.online | #5 |
-| Admin | admin.slyxup.online | #6 |
-| Notification | notification.slyxup.online | #7 |
+## Service-to-service auth
 
-### Dev ports
+| Header | When to use | Example |
+|--------|------------|---------|
+| `Authorization: Bearer <jwt>` | End-user requests (products → auth, products → url-shortener API) | `curl -H "Authorization: Bearer eyJ..."` |
+| `X-API-Key` | Service-to-service (auth → email, notification → email) | `fetch(url, { headers: { "X-API-Key": "sk-..." } })` |
+| `X-Admin-Key` | Admin panel → admin service | Separate from `API_KEY` for isolation |
 
-| Service | Port |
-|---------|------|
-| auth-service | 8000 |
-| billing-service | 8001 |
-| email-service | 8002 |
-| analytics-service | 8003 |
-| storage-service | 8004 |
-| admin-service | 8005 |
-| notification-service | 8006 |
-| url-shortener (product) | 9000 |
+---
+
+## Architecture patterns
+
+### Each service is independently deployable
+```bash
+pnpm --filter @slyxup/auth-service deploy  # Deploys only the auth worker
+pnpm --filter @slyxup/billing-service deploy  # Deploys only billing
+# They don't depend on each other at deploy time
+```
+
+### D1-backed rate limiting
+All services with a database use `d1RateLimit()` from `@slyxup/shared/middleware.ts`:
+- Creates a `rate_limits` table with composite PK `(ip, route, window_start)`
+- Atomic upsert via `INSERT ... ON CONFLICT DO UPDATE`
+- Falls back to in-memory map if no D1 binding (email, storage)
+- Sets `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers
+
+### Local JWT verification
+The URL shortener API verifies JWTs **without calling the auth service**:
+```ts
+import { verifyToken } from "@slyxup/shared";
+const payload = await verifyToken(token, c.env.JWT_SECRET);
+// payload = { sub: "user-id", email: "...", platform_id: "...", exp, iat }
+```
+This eliminates the HTTP roundtrip on every API request.
+
+### Multi-tenant by default
+Every table has a `platform` column (or `platform_id`). A product like "URL Shortener" passes `platform: "url-shortener"` on registration, analytics, billing, and storage. The UI only shows data for its platform.
+
+---
+
+## Product architecture (URL Shortener example)
+
+```
+products/url-shortener/
+├── apps/
+│   ├── api/          → Cloudflare Worker, Hono, D1, local JWT verify
+│   │   POST /api/url     Create short URL (auth required, checks plan limits)
+│   │   GET  /api/url     List user's URLs (auth required, paginated)
+│   │   DELETE /api/url/:id  Delete URL (auth required)
+│   │   GET  /:slug       Redirect to original URL (public, tracks pageview)
+│   └── web/          → React + Vite + Tailwind v4 SPA
+│       - Manual routing (no react-router)
+│       - Pages: Landing, AuthPage, Dashboard, Billing, Settings, VerifyEmail
+│       - SDK calls go directly to platform services (auth.slyxup.online, etc.)
+│       - public/_routes.json for SPA fallback on Cloudflare Pages
+```
+
+### Plan limits enforced per-product
+| Plan | URLs | Slugs | Expiry |
+|------|------|-------|--------|
+| Free | 10 | 6-char auto | 30 days |
+| Pro | 1,000 | Custom (4-12 chars) | No expiry |
+
+The API checks `billing.getSubscription()` locally (via SDK) before creating URLs.
+
+---
 
 ## Database schemas
 
-| Service | Tables |
-|---------|--------|
-| **Auth** | users, sessions, oauth_accounts, platforms, platform_memberships |
-| **Billing** | plans, subscriptions, invoices |
-| **Analytics** | events, page_views |
-| **Admin** | admin_users, audit_logs |
-| **Notification** | notification_templates, notification_logs |
-| Email | No DB (Brevo API) |
-| Storage | No DB (R2) |
+### Auth (D1: `slyxup-auth`)
+`users`, `sessions`, `oauth_accounts`, `platforms`, `platform_memberships`, `rate_limits`, `audit_logs`, `oauth_states`
 
-Each service owns its own schema in `src/schema/index.ts` and SQL migrations in `migrations/`.
+### Billing (D1: `slyxup-billing`)
+`plans`, `subscriptions`, `invoices`, `rate_limits`
 
-## Quick start
+### Analytics (D1: `slyxup-analytics`)
+`events`, `page_views`, `rate_limits`
 
-```bash
-# Start all platform services
-./start.sh start core
+### Admin (D1: `slyxup-admin`)
+`admin_users`, `audit_logs`, `rate_limits`
 
-# Start a single service
-./start.sh start auth-service
+### Notification (D1: `slyxup-notification`)
+`notification_templates`, `notification_logs`, `rate_limits`
 
-# Start URL shortener product
-./start.sh start url-shortener
+### Email
+No DB — proxy to Brevo API.
 
-# Start everything at once
-./start.sh start all
-```
+### Storage
+No DB — wraps R2 (Cloudflare's S3-compatible object storage).
 
-### start.sh commands
+---
 
-```
-./start.sh start [scope]   Start services (core, product, all, or <name>)
-./start.sh stop [scope]    Stop services (all, <name>, or <port>)
-./start.sh status          Show what's running
-./start.sh logs [name]     Tail logs (default: auth)
-```
-
-## Manual test walkthrough
+## Development
 
 ```bash
-# 1. Start auth + url-shortener
-./start.sh start auth-service
-./start.sh start url-shortener
+pnpm install
 
-# 2. Register a user
-curl -X POST http://localhost:8000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123","name":"Test User","platform":"url-shortener"}'
+# Start services individually:
+pnpm --filter @slyxup/auth-service dev         # port 8000
+pnpm --filter @slyxup/billing-service dev      # port 8001
+pnpm --filter @slyxup/email-service dev        # port 8002
+pnpm --filter @slyxup/analytics-service dev    # port 8003
+pnpm --filter @slyxup/storage-service dev      # port 8004
+pnpm --filter @slyxup/admin-service dev        # port 8005
+pnpm --filter @slyxup/notification-service dev # port 8006
+pnpm --filter @slyxup/url-shortener dev:api    # port 9000
+pnpm --filter @slyxup/url-shortener-web dev    # port 5173
 
-# 3. Login → get JWT
-curl -s -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123","platform":"url-shortener"}'
-
-# 4. Create short URL (uses SDK: auth.me + billing.getSubscription + analytics.trackEvent)
-curl -X POST http://localhost:9000/api/url \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <jwt>" \
-  -d '{"url":"https://example.com/very/long/path"}'
-
-# 5. List URLs (uses SDK: auth.me)
-curl http://localhost:9000/api/url \
-  -H "Authorization: Bearer <jwt>"
-
-# 6. Test redirect (uses SDK: analytics.trackPageView)
-curl -v http://localhost:9000/<slug>
-# → 302 Found → Location: https://example.com/very/long/path
+# Or use start.sh for convenience:
+./start.sh start core    # All 7 platform services
+./start.sh start product # URL shortener (api + web)
+./start.sh start all     # Everything
 ```
 
-## Platform service pattern
-
-Every service follows the same structure:
-
+### Local verification flow
+Since email service is only in production, verification links are logged:
 ```
-platform/{name}-service/
-├── src/
-│   ├── index.ts        → OpenAPIHono app, CORS, middlewares
-│   ├── db.ts           → Drizzle D1 factory (services with DB only)
-│   ├── schema/index.ts → Drizzle ORM tables (services with DB only)
-│   └── routes/         → Route handlers (one file per endpoint group)
-├── migrations/         → D1 SQL migration files
-├── wrangler.jsonc      → Worker config
-├── .dev.vars           → Local secrets (gitignored)
-├── .dev.vars.example   → Template without secrets
-├── package.json
-└── tsconfig.json
+{"level":"info","message":"dev_verification_link","verifyLink":"http://localhost:5173/verify-email?token=..."}
 ```
+Open that link in your browser. Requires `APP_DOMAIN=http://localhost:5173` in `platform/auth-service/.dev.vars`.
 
-### API response format
-
-```json
-{ "success": true, "data": { ... } }
-{ "success": false, "error": "..." }
-```
-
-### Auth headers
-
-| Header | Purpose |
-|--------|---------|
-| `Authorization: Bearer <jwt>` | User auth |
-| `X-API-Key` | Service-to-service |
-| `X-Admin-Key` | Admin endpoints |
-
-## Shared secrets
-
-Services that need to talk are connected via shared secrets. The `.env.prod` file at the project root tracks the canonical values:
-
-| Secret | Used by | Purpose |
-|--------|---------|---------|
-| `API_KEY` | auth-service → email-service | Auth sends verification/reset emails through email-service |
-| `JWT_SECRET` | auth-service, admin-service, url-shortener API | JWT signing and local verification |
-
-Set each secret on every worker that needs it:
+### Apply DB migrations
 ```bash
-cat .env.prod | grep API_KEY | cut -d= -f2- | tr -d ' ' | xargs -I{} sh -c 'echo -n "{}" | wrangler secret put API_KEY --name slyxup-auth'
-cat .env.prod | grep JWT_SECRET | cut -d= -f2- | tr -d ' ' | xargs -I{} sh -c 'echo -n "{}" | wrangler secret put JWT_SECRET --name slyxup-url-shortener'
+pnpm --filter @slyxup/<service> exec wrangler d1 migrations apply slyxup-<db> --local
 ```
-
-For local dev, add the required secrets to each service's `.dev.vars`.
-
-## Local development tips
-
-### Email/password flow locally
-Since the email service is only available in production, verification/reset links are
-logged to the server console in development mode. After registering, check the auth service
-logs for:
-```
-{"level":"info","message":"dev_verification_link","verifyLink":"http://localhost:5173/verify?token=..."}
-```
-
-Make sure `APP_DOMAIN` is set in `platform/auth-service/.dev.vars`:
-```
-APP_DOMAIN=http://localhost:5173
-```
-
-### Missing DB tables locally
-If a service returns `D1_ERROR: no such table`, apply its migrations:
-```bash
-pnpm --filter @slyxup/<service-name> exec wrangler d1 migrations apply slyxup-<db-name> --local
-```
-
-For the URL shortener API (uses product-level wrangler config):
+For URL shortener API:
 ```bash
 pnpm --filter @slyxup/url-shortener exec wrangler d1 migrations apply slyxup-url-shortener --local --config apps/api/wrangler.jsonc
 ```
 
-## Known issues
-
-- **pnpm install crashes** (OOM/SIGTERM kills the process). Manual symlinks are maintained for typechecks instead.
-- Typecheck one package at a time: `cd packages/sdk && npx tsc --noEmit` (or use the filter).
+---
 
 ## Deployment
 
-Each service deploys independently. Before deploying, ensure required secrets are set on the target worker:
-
 ```bash
-# List current secrets
-npx wrangler secret list --name slyxup-auth
+# 1. Set secrets on each worker
+echo -n "your-jwt-secret" | wrangler secret put JWT_SECRET --name slyxup-auth
+echo -n "your-api-key" | wrangler secret put API_KEY --name slyxup-email
+# ... etc for each service
 
-# Set API_KEY on auth (needed to call email service)
-echo -n "sk-slyxup-s1785136484" | wrangler secret put API_KEY --name slyxup-auth
+# 2. Apply production DB migrations
+pnpm --filter @slyxup/auth-service exec wrangler d1 migrations apply slyxup-auth --remote
 
-# Set API_KEY on email (needed to accept requests from auth)
-echo -n "sk-slyxup-s1785136484" | wrangler secret put API_KEY --name slyxup-email
-
-# Set JWT_SECRET on url-shortener API (local JWT verification)
-echo -n "your-jwt-secret" | wrangler secret put JWT_SECRET --name slyxup-url-shortener
-```
-
-Then deploy:
-
-```bash
-pnpm --filter @slyxup/auth-service deploy         # auth.slyxup.online
-pnpm --filter @slyxup/billing-service deploy      # billing.slyxup.online
-pnpm --filter @slyxup/email-service deploy        # email.slyxup.online
-pnpm --filter @slyxup/analytics-service deploy    # analytics.slyxup.online
-pnpm --filter @slyxup/storage-service deploy      # storage.slyxup.online
-pnpm --filter @slyxup/admin-service deploy        # admin.slyxup.online
-pnpm --filter @slyxup/notification-service deploy # notification.slyxup.online
-pnpm --filter @slyxup/url-shortener deploy:api    # api-url.slyxup.online
-pnpm --filter @slyxup/url-shortener deploy:web    # url.slyxup.online (Pages)
+# 3. Deploy
+pnpm --filter @slyxup/auth-service deploy
+pnpm --filter @slyxup/billing-service deploy
+pnpm --filter @slyxup/email-service deploy
+pnpm --filter @slyxup/analytics-service deploy
+pnpm --filter @slyxup/storage-service deploy
+pnpm --filter @slyxup/admin-service deploy
+pnpm --filter @slyxup/notification-service deploy
+pnpm --filter @slyxup/url-shortener deploy:api
+pnpm --filter @slyxup/url-shortener deploy:web
 ```
 
-## API endpoints
+### CI (GitHub Actions)
+Pushing to `main` triggers:
+1. Deploy all 7 platform Services (sequential — each can fail independently)
+2. Deploy URL Shortener API Worker
+3. Deploy URL Shortener Web (Cloudflare Pages)
 
-### Auth (8000)
-```
-POST /api/auth/register            POST /api/auth/login
-POST /api/auth/logout              POST /api/auth/refresh
-POST /api/auth/logout-all          GET  /api/auth/me
-PATCH /api/auth/me                 DELETE /api/auth/me
-GET  /api/auth/verify              POST /api/auth/change-password
-POST /api/auth/forgot-password     POST /api/auth/reset-password
-POST /api/auth/resend-verification GET  /api/auth/google
-GET  /api/auth/google/callback     GET  /api/auth/github
-GET  /api/auth/github/callback     GET  /api/auth/sessions
-DELETE /api/auth/sessions/:id
-```
+Check: https://github.com/ysr-hameed/slyxup/actions
 
-### Billing (8001)
-```
-GET  /api/billing/plans           POST /api/billing/create-checkout
-POST /api/billing/create-portal   GET  /api/billing/subscription
-POST /api/billing/webhook
-```
+---
 
-### Email (8002)
-```
-POST /api/email/send
-```
+## Key conventions
 
-### Analytics (8003)
-```
-POST /api/analytics/event         POST /api/analytics/pageview
-GET  /api/analytics/events        GET  /api/analytics/summary
-```
-
-### Storage (8004)
-```
-POST /api/storage/upload   GET /api/storage/download?key=
-GET  /api/storage/list
-```
-
-### Admin (8005)
-```
-GET  /api/admin/dashboard   GET  /api/admin/users
-POST /api/admin/users       GET  /api/admin/audit-logs
-POST /api/admin/audit-logs
-```
-
-### Notification (8006)
-```
-POST /api/notification/send   GET /api/notification/logs
-```
-
-### URL Shortener product (9000)
-```
-POST /api/url   (create short URL — SDK: auth.me + billing.getSubscription + analytics.trackEvent)
-GET  /api/url   (list my URLs — SDK: auth.me)
-GET  /:slug     (redirect — SDK: analytics.trackPageView)
-```
+- **API response format**: `{ success: true, data: {...} }` or `{ success: false, error: "..." }`
+- **Auth**: `Authorization: Bearer <jwt>` for users, `X-API-Key` for services, `X-Admin-Key` for admin
+- **Error handling**: All services use `createHonoErrorHandler()` from `@slyxup/logger`
+- **Logging**: Structured JSON via `@slyxup/logger` — every request logged with method, path, status, duration
+- **Rate limiting**: D1-backed (atomic upsert, composite PK on ip+route+window), falls back to in-memory for services without DB
+- **Workspace protocol**: All `@slyxup/*` deps use `workspace:*`; `pnpm publish` auto-converts to version ranges

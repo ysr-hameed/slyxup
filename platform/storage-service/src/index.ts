@@ -8,6 +8,7 @@ import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import upload from "./routes/upload";
 import download from "./routes/download";
 import list from "./routes/list";
+import deleteRoute from "./routes/delete";
 
 const app = new OpenAPIHono<{ Bindings: StorageEnv }>();
 
@@ -26,6 +27,7 @@ app.use("*", async (c, next) => {
 app.route("/api/storage", upload);
 app.route("/api/storage", download);
 app.route("/api/storage", list);
+app.route("/api/storage", deleteRoute);
 
 setupOpenApi(app, {
   title: "Slyxup Storage API", version: "1.0.0",

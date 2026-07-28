@@ -18,6 +18,7 @@ export interface SlyxupClient {
 
 export interface SlyxupClientConfig {
   apiKey?: string;
+  jwt?: string;
   baseUrl?: string;
   authBaseUrl?: string;
   billingBaseUrl?: string;
@@ -35,7 +36,7 @@ function baseUrl(config: SlyxupClientConfig, key: keyof SlyxupClientConfig, fall
 export function createSlyxupClient(config: SlyxupClientConfig): SlyxupClient {
   return {
     auth: createAuthClient({ baseUrl: baseUrl(config, "authBaseUrl", "https://auth.slyxup.online"), apiKey: config.apiKey }),
-    billing: createBillingClient({ baseUrl: baseUrl(config, "billingBaseUrl", "https://billing.slyxup.online"), apiKey: config.apiKey }),
+    billing: createBillingClient({ baseUrl: baseUrl(config, "billingBaseUrl", "https://billing.slyxup.online"), apiKey: config.apiKey, jwt: config.jwt }),
     email: createEmailClient({ baseUrl: baseUrl(config, "emailBaseUrl", "https://email.slyxup.online"), apiKey: config.apiKey }),
     analytics: createAnalyticsClient({ baseUrl: baseUrl(config, "analyticsBaseUrl", "https://analytics.slyxup.online"), apiKey: config.apiKey }),
     storage: createStorageClient({ baseUrl: baseUrl(config, "storageBaseUrl", "https://storage.slyxup.online"), apiKey: config.apiKey }),

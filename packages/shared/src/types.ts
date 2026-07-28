@@ -141,12 +141,13 @@ export interface JwtPayload {
 export interface AuthEnv {
   DB: D1Database;
   JWT_SECRET: string;
+  ENCRYPTION_KEY: string;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   GOOGLE_CALLBACK_URL: string;
-  GITHUB_CLIENT_ID: string;
-  GITHUB_CLIENT_SECRET: string;
-  GITHUB_CALLBACK_URL: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+  GITHUB_CALLBACK_URL?: string;
   API_KEY: string;
   ADMIN_KEY: string;
   EMAIL_SERVICE_URL: string;
@@ -156,8 +157,10 @@ export interface AuthEnv {
 
 export interface BillingEnv {
   DB: D1Database;
+  JWT_SECRET: string;
   PADDLE_API_KEY: string;
   PADDLE_WEBHOOK_SECRET: string;
+  PADDLE_URL_MODE?: string;
   API_KEY: string;
   ENVIRONMENT: string;
 }
@@ -186,6 +189,8 @@ export interface StorageEnv {
 export interface NotificationEnv {
   DB: D1Database;
   API_KEY: string;
+  EMAIL_API_KEY?: string;
+  EMAIL_SERVICE_URL?: string;
   ENVIRONMENT: string;
 }
 

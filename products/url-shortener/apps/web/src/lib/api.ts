@@ -30,39 +30,38 @@ interface ApiResponse<T> {
   nextCursor?: string;
 }
 
-export function createUrlClient(jwt: string) {
-  const headers = {
-    Authorization: `Bearer ${jwt}`,
-  };
+function getBaseUrl() {
+  const base = API_BASE;
+  return base;
+}
 
-  const postHeaders = {
-    ...headers,
-    "Content-Type": "application/json",
-  };
+export function createUrlClient(jwt: string) {
+  const headers = { Authorization: `Bearer ${jwt}` };
+  const postHeaders = { ...headers, "Content-Type": "application/json" };
 
   async function request<T>(url: string, init?: RequestInit): Promise<T> {
-    const res = await fetch(`${API_BASE}${url}`, init);
+    const res = await fetch(`${getBaseUrl()}${url}`, init);
     const json: ApiResponse<T> = await res.json();
     if (!json.success) throw new Error(json.error || "Request failed");
     return json.data as T;
   }
 
   return {
-    list(cursor?: string, limit = 20): Promise<{ items: UrlEntry[]; nextCursor?: string }> {
+    async list(cursor?: string, limit = 20): Promise<{ items: UrlEntry[]; nextCursor?: string }> {
       const params = new URLSearchParams({ limit: String(limit) });
       if (cursor) params.set("cursor", cursor);
-      return request(`/api/url?${params}`, { headers });
+      const res = await fetch(`${getBaseUrl()}/api/url?${params}`, { headers });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Request failed");
+      return { items: json.data as UrlEntry[], nextCursor: json.nextCursor };
     },
 
     async create(url: string, slug?: string, title?: string): Promise<CreateUrlResult> {
       const body: Record<string, string> = { url };
       if (slug) body.slug = slug;
       if (title) body.title = title;
-
-      const res = await fetch(`${API_BASE}/api/url`, {
-        method: "POST",
-        headers: postHeaders,
-        body: JSON.stringify(body),
+      const res = await fetch(`${getBaseUrl()}/api/url`, {
+        method: "POST", headers: postHeaders, body: JSON.stringify(body),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Failed to create URL");

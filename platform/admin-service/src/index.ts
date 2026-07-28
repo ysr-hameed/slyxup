@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { swaggerUI } from "@hono/swagger-ui";
 import type { AdminEnv } from "@slyxup/shared";
-import { setupOpenApi, corsOrigin, applyDefaultRateLimit } from "@slyxup/shared";
+import { setupOpenApi, corsOrigin, d1RateLimit } from "@slyxup/shared";
 import { logger, createHonoErrorHandler } from "@slyxup/logger";
 import adminUsers from "./routes/users";
 import audit from "./routes/audit";
@@ -14,7 +14,7 @@ app.use("*", honoLogger());
 app.use("*", cors({ origin: corsOrigin, allowMethods: ["GET", "POST", "OPTIONS"], allowHeaders: ["Content-Type", "Authorization", "X-Admin-Key"] }));
 app.onError(createHonoErrorHandler());
 
-app.use("*", applyDefaultRateLimit);
+app.use("*", d1RateLimit({ max: 60, window: 60000 }));
 
 app.use("*", async (c, next) => {
   const start = Date.now();
