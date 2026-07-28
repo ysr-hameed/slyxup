@@ -1,9 +1,0 @@
-CREATE TABLE IF NOT EXISTS urls (
-  id TEXT PRIMARY KEY,
-  slug TEXT NOT NULL UNIQUE,
-  original_url TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  clicks INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);

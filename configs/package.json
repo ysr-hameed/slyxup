@@ -1,0 +1,13 @@
+{
+  "name": "@slyxup/tsconfig",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/*": "./src/tsconfig/*.json",
+    "./biome": "./src/biome.json"
+  },
+  "scripts": {
+    "clean": "rm -rf dist"
+  }
+}

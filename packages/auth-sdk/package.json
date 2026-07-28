@@ -1,5 +1,5 @@
 {
-  "name": "@slyxup/shared",
+  "name": "@slyxup/auth-sdk",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -9,6 +9,9 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     }
+  },
+  "dependencies": {
+    "@slyxup/shared": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

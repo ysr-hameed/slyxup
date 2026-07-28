@@ -1,20 +1,10 @@
 packages:
+  - "apps/*"
   - "packages/*"
-  - "platform/*"
-  - "products/*"
-  - "products/url-shortener/apps/*"
+  - "configs"
 allowBuilds:
+  '@biomejs/biome': true
+  better-sqlite3: true
   esbuild: true
   sharp: true
   workerd: true
-minimumReleaseAgeExclude:
-  - '@slyxup/admin-client@1.0.2'
-  - '@slyxup/analytics-client@1.0.2'
-  - '@slyxup/auth-client@1.0.2'
-  - '@slyxup/billing-client@1.0.2'
-  - '@slyxup/email-client@1.0.2'
-  - '@slyxup/logger@1.0.2'
-  - '@slyxup/notification-client@1.0.2'
-  - '@slyxup/sdk@1.0.2'
-  - '@slyxup/shared@1.0.2 || 1.0.3'
-  - '@slyxup/storage-client@1.0.2'

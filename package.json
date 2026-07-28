@@ -1,45 +1,35 @@
 {
   "name": "slyxup",
-  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev:auth": "pnpm --filter @slyxup/auth-service dev",
-    "dev:billing": "pnpm --filter @slyxup/billing-service dev",
-    "dev:email": "pnpm --filter @slyxup/email-service dev",
-    "dev:analytics": "pnpm --filter @slyxup/analytics-service dev",
-    "dev:storage": "pnpm --filter @slyxup/storage-service dev",
-    "dev:admin": "pnpm --filter @slyxup/admin-service dev",
-    "dev:notification": "pnpm --filter @slyxup/notification-service dev",
-    "deploy:auth": "pnpm --filter @slyxup/auth-service deploy",
-    "deploy:billing": "pnpm --filter @slyxup/billing-service deploy",
-    "deploy:email": "pnpm --filter @slyxup/email-service deploy",
-    "deploy:analytics": "pnpm --filter @slyxup/analytics-service deploy",
-    "deploy:storage": "pnpm --filter @slyxup/storage-service deploy",
-    "deploy:admin": "pnpm --filter @slyxup/admin-service deploy",
-    "deploy:notification": "pnpm --filter @slyxup/notification-service deploy",
-    "db:migrate:auth": "wrangler d1 migrations apply slyxup-auth --local",
-    "db:migrate:billing": "wrangler d1 migrations apply slyxup-billing --local",
-    "db:migrate:analytics": "wrangler d1 migrations apply slyxup-analytics --local",
-    "db:migrate:admin": "wrangler d1 migrations apply slyxup-admin --local",
-    "db:migrate:notification": "wrangler d1 migrations apply slyxup-notification --local",
-    "typecheck": "pnpm -r run typecheck",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "start": "./start.sh",
-    "start:core": "./start.sh start core",
-    "start:product": "./start.sh start product",
-    "start:all": "./start.sh start all",
-    "stop:all": "./start.sh stop all",
-    "status": "./start.sh status",
-    "check": "./start.sh check",
-    "logs": "./start.sh logs",
-    "clean": "./start.sh cleanup"
+    "dev": "turbo dev",
+    "dev:api": "pnpm --filter @slyxup/backend dev",
+    "dev:pages": "pnpm --filter @slyxup/auth-pages dev",
+    "dev:dashboard": "pnpm --filter @slyxup/dashboard dev",
+    "dev:all": "pnpm run /^dev:/",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean",
+    "format": "biome check --write .",
+    "db:generate": "pnpm --filter @slyxup/database exec drizzle-kit generate",
+    "db:migrate": "pnpm --filter @slyxup/backend exec wrangler d1 migrations apply slyxauth --local",
+    "db:push": "pnpm run db:generate && pnpm run db:migrate",
+    "auth:gen-schema": "pnpm dlx @better-auth/cli@latest generate --config ./tooling/better-auth.config.ts --output ./packages/database/src/schema/auth.ts",
+    "test": "vitest run && bash scripts/test.sh",
+    "deploy": "bash scripts/deploy.sh"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^13.0.1",
+    "drizzle-orm": "^0.42.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.10"
   },
   "packageManager": "pnpm@11.13.0",
   "engines": {
-    "node": ">=22"
-  },
-  "devDependencies": {
-    "vitest": "^4.1.10"
+    "node": ">=24.0.0"
   }
 }
