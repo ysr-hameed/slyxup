@@ -1,0 +1,30 @@
+{
+  "name": "@slyxup/backend",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist .wrangler"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.6.1",
+    "@hono/zod-validator": "^0.9.0",
+    "@slyxup/database": "workspace:*",
+    "@slyxup/shared": "workspace:*",
+    "better-auth": "^1.6.25",
+    "drizzle-orm": "^0.42.0",
+    "hono": "^4.12.32",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.18.8",
+    "@cloudflare/workers-types": "^4.20250301.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.0.0"
+  }
+}

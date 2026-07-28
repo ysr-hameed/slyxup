@@ -1,0 +1,13 @@
+{
+  "extends": "../../configs/tsconfig/worker.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types"],
+    "noEmit": true,
+    "paths": {
+      "@slyxup/database": ["../../packages/database/src"],
+      "@slyxup/database/schema": ["../../packages/database/src/schema"],
+      "@slyxup/shared": ["../../packages/shared/src"]
+    }
+  },
+  "include": ["src"]
+}

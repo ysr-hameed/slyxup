@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "slyxauth",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "auth.slyxup.in",
+      "custom_domain": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "slyxauth",
+      "database_id": "c6415e6d-60a2-4426-aea6-69272784a305",
+      "migrations_dir": "../../packages/database/drizzle"
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "local-dev"
+    }
+  ],
+  "vars": {
+    "NODE_ENV": "development",
+    "API_BASE_URL": "http://localhost:8787",
+    "FRONTEND_URL": "http://localhost:5173",
+    "CORS_ORIGIN": "http://localhost:5173",
+    "PADDLE_ENVIRONMENT": "sandbox",
+    "BETTER_AUTH_URL": "http://localhost:8787",
+    "BETTER_AUTH_TRUSTED_ORIGINS": "http://localhost:5173",
+    "EMAIL_FROM": "SlyxUp<noreply@slyxup.online>",
+    "SUPPORT_EMAIL": "SlyxUp Support<support@slyxup.online>",
+    "SEND_FROM_EMAIL": "noreply@slyxup.online"
+  }
+}
